@@ -7,9 +7,9 @@ App de escritorio (macOS) para llevar la contabilidad y los impuestos de un aut�
 | Paso | Contenido | Estado |
 |---|---|---|
 | 1 | Perfil con epígrafe IAE, clientes, ingresos, gastos con justificantes, resumen y calendario de impuestos | Hecho |
-| 2 | Facturas (nacionales, UE, fuera de la UE), PDF y VERI\*FACTU | Pendiente |
+| 2 | Facturas (nacionales, UE, fuera de la UE), PDF y VERI\*FACTU | Hecho (envío a la AEAT desactivado) |
 | 3 | Modelos 303, 130, 111, 115, 349, 390 y 347, ficheros para la AEAT y calendario | Pendiente |
-| 4 | Estimación de la renta (modelo 100, Comunidad de Madrid) | Pendiente |
+| 4 | Estimación de la renta (modelo 100, Comunidad de Madrid) | Hecho (pestaña Renta) |
 
 ## Uso en el Mac
 

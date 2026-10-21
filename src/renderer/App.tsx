@@ -7,13 +7,15 @@ import { PaginaGastos } from './pages/Gastos'
 import { PaginaImpuestos } from './pages/Impuestos'
 import { PaginaIngresos } from './pages/Ingresos'
 import { PaginaPerfil } from './pages/Perfil'
+import { PaginaRenta } from './pages/Renta'
 import { PaginaResumen } from './pages/Resumen'
 
-type Pagina = 'resumen' | 'impuestos' | 'ingresos' | 'gastos' | 'clientes' | 'perfil'
+type Pagina = 'resumen' | 'impuestos' | 'renta' | 'ingresos' | 'gastos' | 'clientes' | 'perfil'
 
 const MENU: { id: Pagina; nombre: string }[] = [
   { id: 'resumen', nombre: 'Resumen' },
   { id: 'impuestos', nombre: 'Impuestos' },
+  { id: 'renta', nombre: 'Renta' },
   { id: 'ingresos', nombre: 'Ingresos' },
   { id: 'gastos', nombre: 'Gastos' },
   { id: 'clientes', nombre: 'Clientes' },
@@ -58,6 +60,7 @@ export function App() {
         {pagina === 'perfil' ? <PaginaPerfil onGuardado={setPerfil} /> : null}
         {perfil && pagina === 'resumen' ? <PaginaResumen /> : null}
         {perfil && pagina === 'impuestos' ? <PaginaImpuestos onCambio={contarPendientes} /> : null}
+        {perfil && pagina === 'renta' ? <PaginaRenta /> : null}
         {perfil && pagina === 'ingresos' ? <PaginaIngresos perfil={perfil} /> : null}
         {perfil && pagina === 'gastos' ? <PaginaGastos perfil={perfil} /> : null}
         {perfil && pagina === 'clientes' ? <PaginaClientes /> : null}

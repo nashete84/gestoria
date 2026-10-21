@@ -91,3 +91,8 @@ pre.xml { background: var(--fondo); border: 1px solid var(--borde); border-radiu
 .actividad-cabecera .acciones { margin-top: 0; }
 table.deducibles { margin: 8px 0; }
 table.deducibles input { width: 90px; text-align: right; }
+.cifra.resultado.pagar strong { color: var(--peligro); }
+.cifra.resultado.devolver strong { color: #2a9d55; }
+table.desglose { max-width: 640px; }
+table.desglose tr.subtotal td { font-weight: 600; background: var(--fondo); }
+table.desglose tr.info td { color: var(--suave); font-size: 12px; }

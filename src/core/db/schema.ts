@@ -138,6 +138,12 @@ const MIGRACIONES: string[] = [
   `
   ALTER TABLE ingresos ADD COLUMN actividad_id TEXT;
   ALTER TABLE gastos ADD COLUMN actividad_id TEXT;
+  `,
+  `
+  CREATE TABLE renta_datos (
+    ejercicio INTEGER PRIMARY KEY,
+    datos TEXT NOT NULL
+  );
   `
 ]
 

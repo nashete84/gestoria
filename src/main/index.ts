@@ -5,6 +5,7 @@ import { randomUUID } from 'node:crypto'
 import { basename, join, resolve, sep } from 'node:path'
 import type { ApiGestoria, Resultado } from '../core/api'
 import * as facturas from '../core/db/facturas'
+import * as renta from '../core/db/renta'
 import * as repos from '../core/db/repos'
 import { htmlFactura } from '../core/plantillaFactura'
 import { ENVIO_HABILITADO } from '../core/verifactu'
@@ -165,6 +166,8 @@ const handlers: Handlers = {
     if (!ENVIO_HABILITADO) throw new repos.ErrorValidacion(['El envío a VERI*FACTU está desactivado mientras pruebas la aplicación.'])
     throw new repos.ErrorValidacion(['El envío a VERI*FACTU aún no está implementado.'])
   },
+  estimacionRenta: (ej) => renta.vistaRenta(db, id(ej)),
+  guardarDatosRenta: (ej, d) => renta.guardarDatosRenta(db, id(ej), d),
   abrirCarpetaDatos: async () => {
     await shell.openPath(carpetaDatos())
   }

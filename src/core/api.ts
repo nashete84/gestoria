@@ -2,6 +2,8 @@
 import type { ObligacionConEstado, Presentacion, PresentacionNueva } from './calendario'
 import type { DetalleFactura, Factura } from './db/facturas'
 import type { Resumen } from './db/repos'
+import type { VistaRenta } from './db/renta'
+import type { DatosRenta } from './renta/calculo'
 import type {
   Adjunto, Cliente, ClienteNuevo, Gasto, GastoNuevo, Ingreso, IngresoNuevo, Perfil
 } from './tipos'
@@ -57,6 +59,10 @@ export interface ApiGestoria {
   xmlVerifactu(facturaId: number): Promise<Resultado<string>>
   anularFactura(facturaId: number): Promise<Resultado<Factura>>
   enviarVerifactu(facturaId: number): Promise<Resultado<void>>
+  /** Estimación de la declaración de la renta del ejercicio con los datos guardados. */
+  estimacionRenta(ejercicio: number): Promise<Resultado<VistaRenta>>
+  /** Guarda los datos que no salen de la contabilidad (otras rentas, hijos...) y recalcula. */
+  guardarDatosRenta(ejercicio: number, datos: DatosRenta): Promise<Resultado<VistaRenta>>
   /** Muestra la carpeta donde están la base de datos y los adjuntos (para copias de seguridad). */
   abrirCarpetaDatos(): Promise<Resultado<void>>
 }
@@ -69,5 +75,6 @@ export const METODOS_API = [
   'listarAdjuntos', 'adjuntar', 'elegirArchivos', 'adjuntarElegidos', 'abrirAdjunto', 'borrarAdjunto',
   'resumen', 'calendarioFiscal', 'registrarPresentacion', 'borrarPresentacion',
   'listarFacturas', 'vistaPreviaFactura', 'guardarPdfBorrador', 'emitirFactura', 'detalleFactura', 'guardarPdfFactura', 'xmlVerifactu', 'anularFactura', 'enviarVerifactu',
+  'estimacionRenta', 'guardarDatosRenta',
   'abrirCarpetaDatos'
 ] as const satisfies readonly (keyof ApiGestoria)[]

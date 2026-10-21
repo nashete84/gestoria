@@ -105,3 +105,20 @@ Los gastos ya guardados no se recalculan. Descartado: una tabla completa por ep�
 **Migración sin pérdida.** Los perfiles guardados con un solo `epigrafe` se convierten al leerlos en una actividad principal con id `a1`; los ingresos y gastos existentes quedan en la principal (`actividad_id` nulo). No se puede quitar una actividad que tenga ingresos o gastos.
 
 **La fecha de alta sigue siendo una** (la de la primera actividad), porque decide la retención reducida del 7%. Descartado: fecha de alta por actividad, que no cambia ningún cálculo actual.
+
+## Pestaña Renta (2026-10-21)
+
+**Estimación del modelo 100 como función pura** (`src/core/renta/calculo.ts`), alimentada con los ingresos y gastos del año, los 130 marcados como presentados y unos pocos datos que el usuario rellena por ejercicio (tabla `renta_datos`, migración 5).
+
+**Parámetros como datos por año** (`src/core/renta/parametros.ts`): escalas estatal y de Madrid, escala del ahorro (2025 sube el último tramo estatal al 15%), mínimos personales y familiares, 5% de difícil justificación (máx. 2.000 €), reducciones del art. 32.2, límites de planes de pensiones y coeficientes de amortización. Un año sin parámetros usa los del último disponible y lo avisa. Descartado: valores en el código del cálculo.
+
+**Cálculo:**
+- Rendimiento por actividad: ingresos − gastos corrientes × % deducible − amortizaciones − 5%. El máximo de 2.000 € es conjunto y se reparte en proporción.
+- Amortización lineal al coeficiente máximo de la tabla simplificada (equipos y software 26%, vehículo 16%, resto 10%), prorrateada por días el primer año; los bienes de años anteriores siguen amortizándose.
+- Reducción art. 32.2.3º (rentas < 12.000 €: 1.620 € o 1.620 − 0,405 × (rentas − 8.000)) automática. La del 32.2.2º (autónomo dependiente: 2.000 + hasta 6.498 €) solo si el usuario marca que cumple los requisitos, y entonces no hay 5%. No se comprueban los requisitos: dependen de datos que la app no tiene. Con clientes extranjeros sin retención no se cumple el 70%.
+- Mínimo personal y familiar: se resta como cuota de la escala sobre el mínimo, primero en la base general y lo que sobre en la del ahorro; separado para el tramo estatal y el autonómico.
+- Resultado: cuota líquida − retenciones de facturas − otras retenciones − 130 con resultado "a ingresar" − otros pagos.
+
+**Fuera de alcance (avisado en pantalla):** declaración conjunta, rentas inmobiliarias, compensación de pérdidas, deducciones concretas (se introduce un total), límite conjunto de 3.700 € con la reducción de trabajo y el detalle de la reducción por rendimientos del trabajo (se introduce el neto reducido).
+
+**Pendiente de verificar:** mínimos personales y familiares de Madrid (puestos un 10% por encima de los estatales).
