@@ -36,6 +36,7 @@ export function htmlFactura(d: DetalleFactura, qrDataUrl: string): string {
   .cabecera { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
   .qr { text-align: center; font-size: 10.5pt; width: 40mm; }
   .qr img { width: 32mm; height: 32mm; margin: 2mm; display: block; }
+  .qr-vacio { width: 32mm; height: 32mm; margin: 2mm; border: 1px dashed #9aa4b2; display: flex; align-items: center; justify-content: center; font-size: 8pt; color: #5f6b7a; padding: 4px; }
   h1 { font-size: 20pt; margin: 0 0 4px; text-align: right; }
   .meta { text-align: right; color: #5f6b7a; }
   .partes { display: flex; gap: 24px; margin: 22px 0; }
@@ -54,21 +55,22 @@ export function htmlFactura(d: DetalleFactura, qrDataUrl: string): string {
     font-size: 44pt; font-weight: 800; color: rgba(194, 58, 58, .16); pointer-events: none; }
   .aviso { margin-top: 8px; font-size: 9pt; color: #c23a3a; }
   .anulada { color: #c23a3a; font-weight: 700; }
+  @media screen { body { padding: 16px 20px; } }
 </style></head>
 <body>
-  ${prueba ? '<div class="marca">PRUEBA · NO ENVIADA A LA AEAT</div>' : ''}
+  ${d.borrador ? '<div class="marca">BORRADOR · SIN EMITIR</div>' : prueba ? '<div class="marca">PRUEBA · NO ENVIADA A LA AEAT</div>' : ''}
   <div class="cabecera">
     <div class="qr">
       <div>QR tributario:</div>
-      <img src="${qrDataUrl}" alt="QR tributario">
+      ${d.borrador ? '<div class="qr-vacio">El QR se genera al emitir</div>' : `<img src="${qrDataUrl}" alt="QR tributario">`}
       <div><b>VERI*FACTU</b></div>
     </div>
     <div>
       <h1>Factura</h1>
-      <div class="meta">Nº <b>${e(f.numSerie)}</b><br>Fecha de expedición: ${fecha(f.fechaExpedicion)}</div>
+      <div class="meta">Nº <b>${e(f.numSerie)}</b>${d.borrador ? ' (provisional)' : ''}<br>Fecha de expedición: ${fecha(f.fechaExpedicion)}</div>
       ${f.estado === 'anulada' ? '<div class="meta anulada">ANULADA</div>' : ''}
       ${prueba ? '<div class="aviso">Factura de prueba sin validez fiscal.</div>' : ''}
-      ${!prueba && !enviada ? '<div class="aviso">Registro pendiente de envío a la AEAT.</div>' : ''}
+      ${!prueba && !enviada && !d.borrador ? '<div class="aviso">Registro pendiente de envío a la AEAT.</div>' : ''}
     </div>
   </div>
 
@@ -78,7 +80,7 @@ export function htmlFactura(d: DetalleFactura, qrDataUrl: string): string {
       ${em.email ? `<br>${e(em.email)}` : ''}
     </div>
     <div class="parte"><b>Cliente</b>
-      ${e(cl.nombre)}<br>${extranjero ? 'Tax ID / NIF-IVA' : 'NIF'}: ${e(cl.nif)}<br>${e(cl.domicilio)}<br>
+      ${e(cl.nombre)}<br>${cl.nif ? `${extranjero ? 'Tax ID / NIF-IVA' : 'NIF'}: ${e(cl.nif)}<br>` : ''}${e(cl.domicilio)}<br>
       ${e(cl.codigoPostal)} ${e(cl.municipio)}${cl.provincia ? ` (${e(cl.provincia)})` : ''}${extranjero ? ` · ${e(cl.pais)}` : ''}
     </div>
   </div>

@@ -2,7 +2,7 @@ import Database from 'better-sqlite3'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { perfilBase } from '../fixtures'
 import { htmlFactura } from '../plantillaFactura'
-import { anularFactura, detalleFactura, emitirFactura, verificarCadena, xmlEnvio } from './facturas'
+import { anularFactura, borradorFactura, detalleFactura, emitirFactura, verificarCadena, xmlEnvio } from './facturas'
 import { borrarIngreso, crearCliente, crearIngreso, guardarPerfil, listarIngresos } from './repos'
 import { migrar } from './schema'
 
@@ -76,5 +76,35 @@ describe('salidas', () => {
     expect(html).toContain('PRUEBA')
     expect(html).toContain('Retención IRPF 15%')
     expect(html).toMatch(/Total a pagar<\/td><td class="num">1\.060,00/)
+  })
+})
+
+describe('clientes extranjeros y vista previa', () => {
+  it('factura a un cliente de fuera de la UE sin identificador fiscal', () => {
+    const us = crearCliente(db, { tipo: 'particular', nombre: 'John Smith', nif: '', pais: 'US', domicilio: '', codigoPostal: '', municipio: '', provincia: '', email: '', notas: '' })
+    const ingresoId = crearIngreso(db, { fecha: '2026-10-01', clienteId: us.id, concepto: 'App', base: 50000, tipoIva: 0, retencionPct: 0, operacion: 'no_sujeta', notas: '' }).id
+    const f = emitirFactura(db, ingresoId, '2026-10-21')
+    const xml = xmlEnvio(db, f.id)
+    expect(xml).not.toContain('Destinatarios')
+    expect(htmlFactura(detalleFactura(db, f.id)!, '')).not.toContain('Tax ID')
+  })
+
+  it('un cliente español sin NIF no se puede facturar', () => {
+    const es = crearCliente(db, { tipo: 'particular', nombre: 'Ana', nif: '', pais: 'ES', domicilio: '', codigoPostal: '', municipio: '', provincia: '', email: '', notas: '' })
+    const ingresoId = crearIngreso(db, { fecha: '2026-10-01', clienteId: es.id, concepto: 'x', base: 100, tipoIva: 21, retencionPct: 0, operacion: 'nacional', notas: '' }).id
+    expect(() => emitirFactura(db, ingresoId, '2026-10-21')).toThrow(/NIF/)
+  })
+
+  it('la vista previa no guarda nada ni gasta número', () => {
+    const ingresoId = nuevoIngreso()
+    const b = borradorFactura(db, ingresoId, '2026-10-21')
+    expect(b.factura.numSerie).toBe('PRUEBA-2026-0001')
+    expect(b.borrador).toBe(true)
+    const html = htmlFactura(b, '')
+    expect(html).toContain('BORRADOR')
+    expect(html).toContain('El QR se genera al emitir')
+    expect(db.prepare('SELECT COUNT(*) n FROM facturas').get()).toEqual({ n: 0 })
+    expect(db.prepare('SELECT COUNT(*) n FROM registros_verifactu').get()).toEqual({ n: 0 })
+    expect(emitirFactura(db, ingresoId, '2026-10-21').numSerie).toBe('PRUEBA-2026-0001')
   })
 })

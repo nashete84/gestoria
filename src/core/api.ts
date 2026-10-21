@@ -42,6 +42,10 @@ export interface ApiGestoria {
 
   /** Emite la factura de un ingreso y genera su registro VERI*FACTU (no lo envía). */
   listarFacturas(desde: string, hasta: string): Promise<Resultado<Factura[]>>
+  /** HTML de la vista previa de la factura de un ingreso (sin emitirla). */
+  vistaPreviaFactura(ingresoId: number): Promise<Resultado<string>>
+  /** PDF de la vista previa; pregunta dónde guardarlo. */
+  guardarPdfBorrador(ingresoId: number): Promise<Resultado<string | null>>
   emitirFactura(ingresoId: number): Promise<Resultado<Factura>>
   detalleFactura(facturaId: number): Promise<Resultado<DetalleFactura>>
   /** Genera el PDF, pregunta dónde guardarlo y lo abre. Devuelve la ruta o null si se cancela. */
@@ -61,6 +65,6 @@ export const METODOS_API = [
   'listarGastos', 'crearGasto', 'actualizarGasto', 'borrarGasto',
   'listarAdjuntos', 'adjuntar', 'abrirAdjunto', 'borrarAdjunto',
   'resumen', 'calendarioFiscal', 'registrarPresentacion', 'borrarPresentacion',
-  'listarFacturas', 'emitirFactura', 'detalleFactura', 'guardarPdfFactura', 'xmlVerifactu', 'anularFactura', 'enviarVerifactu',
+  'listarFacturas', 'vistaPreviaFactura', 'guardarPdfBorrador', 'emitirFactura', 'detalleFactura', 'guardarPdfFactura', 'xmlVerifactu', 'anularFactura', 'enviarVerifactu',
   'abrirCarpetaDatos'
 ] as const satisfies readonly (keyof ApiGestoria)[]

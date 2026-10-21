@@ -35,6 +35,29 @@ export function PaginaIngresos({ perfil }: { perfil: Perfil }) {
     ]).catch((e) => setErrores(mensajes(e)))
   }
 
+  const [previa, setPrevia] = useState<string | null>(null)
+
+  /** Guarda los cambios del formulario sin cerrarlo; devuelve el id del ingreso. */
+  const guardarSinCerrar = async (): Promise<number> => {
+    if (!editando) throw new Error('Sin ingreso')
+    const i = editando.id === null
+      ? await llamar(api.crearIngreso(editando.datos))
+      : await llamar(api.actualizarIngreso(editando.id, editando.datos))
+    setEditando({ ...editando, id: i.id })
+    await cargar()
+    return i.id
+  }
+
+  const verPrevia = async () => {
+    try {
+      const idIngreso = await guardarSinCerrar()
+      setPrevia(await llamar(api.vistaPreviaFactura(idIngreso)))
+      setErrores([])
+    } catch (e) {
+      setErrores(mensajes(e))
+    }
+  }
+
   const emitir = async () => {
     if (!editando?.id) return
     if (!confirm('¿Emitir la factura de este ingreso?\n\nSe le asignará número y se generará su registro VERI*FACTU. Después no podrás modificar el ingreso; solo anular la factura.')) return
@@ -138,8 +161,23 @@ export function PaginaIngresos({ perfil }: { perfil: Perfil }) {
           ) : null}
           <div className="acciones">
             {editando.facturaId === null ? <button onClick={guardar}>Guardar</button> : null}
+            {editando.facturaId === null && d.clienteId !== null ? <button className="secundario" onClick={verPrevia}>Vista previa de factura</button> : null}
             {editando.id !== null && editando.facturaId === null ? <button className="secundario" onClick={emitir}>Emitir factura</button> : null}
             <button className="secundario" onClick={() => setEditando(null)}>{editando.facturaId === null ? 'Cancelar' : 'Cerrar'}</button>
+          </div>
+        </div>
+      ) : null}
+
+      {previa && editando?.id ? (
+        <div className="modal" onClick={() => setPrevia(null)}>
+          <div className="modal-caja" onClick={(e) => e.stopPropagation()}>
+            <div className="cabecera">
+              <h1>Vista previa</h1>
+              <button onClick={() => llamar(api.guardarPdfBorrador(editando.id!)).catch((e) => setErrores(mensajes(e)))}>Descargar PDF</button>
+              <button onClick={() => { setPrevia(null); void emitir() }}>Emitir factura</button>
+              <button className="secundario" onClick={() => setPrevia(null)}>Cerrar</button>
+            </div>
+            <iframe title="Vista previa de la factura" sandbox="" srcDoc={previa} />
           </div>
         </div>
       ) : null}

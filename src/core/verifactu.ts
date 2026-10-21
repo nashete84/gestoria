@@ -41,7 +41,9 @@ export interface DatosAlta {
   fechaExpedicion: string // AAAA-MM-DD
   tipoFactura: 'F1'
   descripcion: string
+  /** null: cliente extranjero sin identificador fiscal; se omite el bloque Destinatarios. */
   destinatario:
+    | null
     | { nombre: string; nif: string }
     | { nombre: string; codigoPais: string; idType: '02' | '04' | '06'; id: string }
   desglose: {
@@ -150,7 +152,9 @@ function xmlSistema(s: SistemaInformatico): string {
 }
 
 export function xmlRegistroAlta(d: DatosAlta, huella: string): string {
-  const dest = 'nif' in d.destinatario
+  const dest = d.destinatario === null
+    ? ''
+    : 'nif' in d.destinatario
     ? `<sum1:NombreRazon>${e(d.destinatario.nombre)}</sum1:NombreRazon><sum1:NIF>${e(d.destinatario.nif)}</sum1:NIF>`
     : `<sum1:NombreRazon>${e(d.destinatario.nombre)}</sum1:NombreRazon><sum1:IDOtro>` +
       `<sum1:CodigoPais>${e(d.destinatario.codigoPais)}</sum1:CodigoPais>` +
@@ -172,7 +176,7 @@ export function xmlRegistroAlta(d: DatosAlta, huella: string): string {
     `<sum1:NombreRazonEmisor>${e(d.nombreEmisor)}</sum1:NombreRazonEmisor>` +
     `<sum1:TipoFactura>${d.tipoFactura}</sum1:TipoFactura>` +
     `<sum1:DescripcionOperacion>${e(d.descripcion.slice(0, 500))}</sum1:DescripcionOperacion>` +
-    `<sum1:Destinatarios><sum1:IDDestinatario>${dest}</sum1:IDDestinatario></sum1:Destinatarios>` +
+    (dest ? `<sum1:Destinatarios><sum1:IDDestinatario>${dest}</sum1:IDDestinatario></sum1:Destinatarios>` : '') +
     `<sum1:Desglose><sum1:DetalleDesglose>${detalle}</sum1:DetalleDesglose></sum1:Desglose>` +
     `<sum1:CuotaTotal>${importeXml(d.cuotaTotal)}</sum1:CuotaTotal>` +
     `<sum1:ImporteTotal>${importeXml(d.importeTotal)}</sum1:ImporteTotal>` +

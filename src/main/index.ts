@@ -5,6 +5,7 @@ import { join, resolve, sep } from 'node:path'
 import type { ApiGestoria, Resultado } from '../core/api'
 import * as facturas from '../core/db/facturas'
 import * as repos from '../core/db/repos'
+import { htmlFactura } from '../core/plantillaFactura'
 import { ENVIO_HABILITADO } from '../core/verifactu'
 import { migrar } from '../core/db/schema'
 import { copiarAdjunto, eliminarArchivo } from './adjuntos'
@@ -133,14 +134,12 @@ const handlers: Handlers = {
   guardarPdfFactura: async (i) => {
     const d = facturas.detalleFactura(db, id(i))
     if (!d) throw new repos.ErrorValidacion(['La factura no existe.'])
-    const pdf = await generarPdf(d)
-    const r = await dialog.showSaveDialog(ventana!, {
-      title: 'Guardar factura', defaultPath: `Factura ${d.factura.numSerie}.pdf`, filters: [{ name: 'PDF', extensions: ['pdf'] }]
-    })
-    if (r.canceled || !r.filePath) return null
-    await writeFile(r.filePath, pdf)
-    await shell.openPath(r.filePath)
-    return r.filePath
+    return guardarPdf(d, `Factura ${d.factura.numSerie}.pdf`)
+  },
+  vistaPreviaFactura: (i) => htmlFactura(facturas.borradorFactura(db, id(i), hoyLocal()), ''),
+  guardarPdfBorrador: (i) => {
+    const d = facturas.borradorFactura(db, id(i), hoyLocal())
+    return guardarPdf(d, `Borrador factura ${d.factura.numSerie}.pdf`)
   },
   xmlVerifactu: (i) => facturas.xmlEnvio(db, id(i)),
   anularFactura: (i) => facturas.anularFactura(db, id(i)),
@@ -152,6 +151,17 @@ const handlers: Handlers = {
   abrirCarpetaDatos: async () => {
     await shell.openPath(carpetaDatos())
   }
+}
+
+async function guardarPdf(d: facturas.DetalleFactura, nombre: string): Promise<string | null> {
+  const pdf = await generarPdf(d)
+  const r = await dialog.showSaveDialog(ventana!, {
+    title: 'Guardar factura', defaultPath: nombre, filters: [{ name: 'PDF', extensions: ['pdf'] }]
+  })
+  if (r.canceled || !r.filePath) return null
+  await writeFile(r.filePath, pdf)
+  await shell.openPath(r.filePath)
+  return r.filePath
 }
 
 async function limpiarArchivos(rutas: string[]) {

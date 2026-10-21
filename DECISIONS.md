@@ -75,3 +75,9 @@
 Hay que validar el XML contra los XSD oficiales antes de activar el envío.
 
 **PDF con Electron (`printToPDF`) en una ventana oculta sin JavaScript.** Sin dependencias extra salvo `qrcode` (nivel de corrección M). QR arriba a la izquierda con "QR tributario:" y "VERI*FACTU", como pide la AEAT.
+
+## Clientes extranjeros sin identificador y vista previa (2026-10-21)
+
+**Clientes extranjeros sin identificador fiscal.** Se pueden facturar; el registro VERI*FACTU omite el bloque `Destinatarios`. Los clientes españoles siguen necesitando NIF, y las empresas de la UE su NIF-IVA (sin él no se puede aplicar la inversión del sujeto pasivo). Supuesto pendiente de validar contra el XSD: que la AEAT acepta una F1 sin destinatario para clientes extranjeros; si no, la alternativa es emitirla como simplificada (F2) cuando el importe lo permita.
+
+**Vista previa antes de emitir.** "Vista previa de factura" guarda el ingreso, muestra la factura con el número que le tocaría, marca "BORRADOR · SIN EMITIR" y sin QR, y permite descargarla en PDF o emitirla desde ahí. No guarda nada ni consume número. Se muestra en un iframe con `sandbox` (sin scripts).

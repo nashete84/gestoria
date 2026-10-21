@@ -45,6 +45,8 @@ export interface DetalleFactura {
   registros: RegistroVerifactu[]
   urlQr: string
   envioHabilitado: boolean
+  /** Vista previa antes de emitir: sin QR ni registro. */
+  borrador?: boolean
 }
 
 function aFactura(f: Fila): Factura {
@@ -92,6 +94,7 @@ function sistema(p: Perfil) {
 function destinatario(c: Cliente): DatosAlta['destinatario'] {
   const ambito = ambitoDePais(c.pais)
   if (ambito === 'nacional') return { nombre: c.nombre, nif: normalizarNif(c.nif) }
+  if (!c.nif.trim()) return null
   // 02 = NIF-IVA (empresas de la UE); 06 = otro documento (resto de extranjeros).
   const idType = ambito === 'ue' && c.tipo === 'empresa' ? '02' : '06'
   return { nombre: c.nombre, codigoPais: c.pais, idType, id: normalizarNif(c.nif) }
@@ -105,7 +108,8 @@ function serieDe(entorno: Entorno, anio: string) {
  * Emite la factura de un ingreso: le asigna número, guarda una copia fija de los datos
  * y genera su registro de alta encadenado. A partir de aquí el ingreso no se puede editar.
  */
-export function emitirFactura(db: Db, ingresoId: number, hoy: string, ahora = new Date()): Factura {
+/** Comprueba que el ingreso se puede facturar y calcula el número que le tocaría. */
+function prepararFactura(db: Db, ingresoId: number, hoy: string) {
   const perfil = leerPerfil(db)
   if (!perfil) throw new ErrorValidacion(['Rellena tu perfil antes de emitir facturas.'])
   const ing = db.prepare('SELECT * FROM ingresos WHERE id = ?').get(ingresoId) as Fila | undefined
@@ -118,7 +122,10 @@ export function emitirFactura(db: Db, ingresoId: number, hoy: string, ahora = ne
     pais: cli.pais as string, domicilio: cli.domicilio as string, codigoPostal: cli.codigo_postal as string,
     municipio: cli.municipio as string, provincia: cli.provincia as string, email: cli.email as string, notas: cli.notas as string
   }
-  if (!cliente.nif) throw new ErrorValidacion(['El cliente necesita NIF o identificador fiscal para una factura completa.'])
+  // A clientes extranjeros se les puede facturar sin identificador fiscal; a los españoles no.
+  if (ambitoDePais(cliente.pais) === 'nacional' && !cliente.nif) {
+    throw new ErrorValidacion(['El cliente español necesita NIF para una factura completa.'])
+  }
 
   const fecha = ing.fecha as string
   if (fecha > hoy) throw new ErrorValidacion(['No se puede emitir una factura con fecha futura.'])
@@ -132,6 +139,11 @@ export function emitirFactura(db: Db, ingresoId: number, hoy: string, ahora = ne
   const numero = (ultima?.numero ?? 0) + 1
   const numSerie = `${serie}-${String(numero).padStart(4, '0')}`
 
+  return { perfil, ing, cliente, fecha, entorno, serie, numero, numSerie }
+}
+
+export function emitirFactura(db: Db, ingresoId: number, hoy: string, ahora = new Date()): Factura {
+  const { perfil, ing, cliente, fecha, entorno, serie, numero, numSerie } = prepararFactura(db, ingresoId, hoy)
   const operacion = ing.operacion as Factura['operacion']
   const datos: DatosAlta = {
     idEmisor: perfil.nif,
@@ -246,4 +258,19 @@ export function verificarCadena(db: Db, entorno: Entorno): { ok: boolean; regist
     anterior = f.huella as string
   }
   return { ok: true, registros: filas.length }
+}
+
+/**
+ * Vista previa: la factura tal como quedaría con el siguiente número, sin guardar nada
+ * ni generar registro VERI*FACTU.
+ */
+export function borradorFactura(db: Db, ingresoId: number, hoy: string): DetalleFactura {
+  const { perfil, ing, cliente, fecha, entorno, numSerie } = prepararFactura(db, ingresoId, hoy)
+  const factura: Factura = {
+    id: 0, entorno, numSerie, fechaExpedicion: fecha, ingresoId, emisor: perfil, cliente,
+    concepto: ing.concepto as string, base: ing.base as number, tipoIva: ing.tipo_iva as number,
+    cuotaIva: ing.cuota_iva as number, retencionPct: ing.retencion_pct as number,
+    cuotaRetencion: ing.cuota_retencion as number, operacion: ing.operacion as Factura['operacion'], estado: 'emitida'
+  }
+  return { factura, registros: [], urlQr: '', envioHabilitado: ENVIO_HABILITADO, borrador: true }
 }
