@@ -38,6 +38,8 @@ it('guarda los datos del usuario por ejercicio y descarta campos desconocidos', 
   const v = guardarDatosRenta(db, 2025, { ...DATOS_RENTA_VACIOS, deducciones: 12300, extra: 'x' } as never)
   expect(v.estimacion.deducciones).toBe(0) // sin cuota no hay nada que deducir
   expect(leerDatosRenta(db, 2025)).toEqual({ ...DATOS_RENTA_VACIOS, deducciones: 12300 })
+  guardarDatosRenta(db, 2025, { ...DATOS_RENTA_VACIOS, descendientes: [{ anioNacimiento: 2010, compartido: false, otro: 1 } as never] })
+  expect(leerDatosRenta(db, 2025).descendientes).toEqual([{ anioNacimiento: 2010, compartido: false, discapacidad: 0, asistencia: false }])
   expect(leerDatosRenta(db, 2024)).toEqual(DATOS_RENTA_VACIOS)
   guardarDatosRenta(db, 2025, { ...DATOS_RENTA_VACIOS, deducciones: 100 })
   expect(leerDatosRenta(db, 2025).deducciones).toBe(100)

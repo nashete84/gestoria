@@ -48,6 +48,24 @@ describe('minimoPersonalFamiliar', () => {
   })
 })
 
+describe('discapacidad y dependencia', () => {
+  it('hijo con discapacidad del 33% y dependencia suma 3.000 + 3.000 aunque tenga más de 25 años', () => {
+    const d = { ...DATOS_RENTA_VACIOS, descendientes: [{ anioNacimiento: 1995, compartido: false, discapacidad: 33 as const, asistencia: true }] }
+    expect(minimoPersonalFamiliar(p2025.minimosEstatales, 2025, d)).toBe(e(5550 + 2400 + 3000 + 3000))
+  })
+  it('grado del 65% incluye siempre la asistencia; compartido se reparte al 50%', () => {
+    const d = { ...DATOS_RENTA_VACIOS, descendientes: [{ anioNacimiento: 2015, compartido: true, discapacidad: 65 as const }] }
+    expect(minimoPersonalFamiliar(p2025.minimosEstatales, 2025, d)).toBe(e(5550 + (2400 + 9000 + 3000) / 2))
+  })
+  it('discapacidad del propio contribuyente', () => {
+    const d = { ...DATOS_RENTA_VACIOS, discapacidad: 33 as const }
+    expect(minimoPersonalFamiliar(p2025.minimosEstatales, 2025, d)).toBe(e(8550))
+  })
+  it('valida el grado', () => {
+    expect(validarDatosRenta({ ...DATOS_RENTA_VACIOS, discapacidad: 50 as never }, 2025)).toHaveLength(1)
+  })
+})
+
 describe('amortizar', () => {
   const ordenador = gasto('2024-07-01', 1200, { categoria: 'equipos', bienInversion: true })
   it('prorratea el primer año por días', () => {

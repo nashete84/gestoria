@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { VistaRenta } from '../../core/db/renta'
-import type { DatosRenta, EstimacionRenta } from '../../core/renta/calculo'
+import type { DatosRenta, EstimacionRenta, GradoDiscapacidad } from '../../core/renta/calculo'
 import { api, llamar, mensajes } from '../api'
 import { Avisos, Campo, CampoEuros, Errores, euros, hoy } from '../componentes'
 
@@ -207,22 +207,41 @@ function FormularioDatos({ datos, ejercicio, set }: {
         </Campo>
       </div>
 
-      <h2>Hijos menores de 25 que viven contigo</h2>
-      {hijos.map((h, i) => (
-        <div key={i} className="acciones">
-          <Campo etiqueta={`Año de nacimiento del hijo ${i + 1}`}>
-            <input type="number" min={1900} max={ejercicio} value={h.anioNacimiento}
-              onChange={(e) => set('descendientes', hijos.map((x, j) => j === i ? { ...x, anioNacimiento: Number(e.target.value) } : x))} />
-          </Campo>
-          <label className="check">
-            <input type="checkbox" checked={h.compartido}
-              onChange={(e) => set('descendientes', hijos.map((x, j) => j === i ? { ...x, compartido: e.target.checked } : x))} />
-            Lo comparto con el otro progenitor (50%)
-          </label>
-          <button className="peligro" onClick={() => set('descendientes', hijos.filter((_, j) => j !== i))}>Quitar</button>
-        </div>
-      ))}
-      <button className="secundario" onClick={() => set('descendientes', [...hijos, { anioNacimiento: ejercicio, compartido: true }])}>Añadir hijo</button>
+      <h2>Tu discapacidad</h2>
+      <div className="acciones">
+        <SelectorDiscapacidad valor={datos.discapacidad ?? 0} onChange={(g) => set('discapacidad', g)} />
+        <label className="check">
+          <input type="checkbox" checked={!!datos.asistencia} disabled={!datos.discapacidad}
+            onChange={(e) => set('asistencia', e.target.checked)} />
+          Necesito ayuda de terceros o tengo movilidad reducida
+        </label>
+      </div>
+
+      <h2>Hijos que viven contigo</h2>
+      <p className="nota">Menores de 25 años, o de cualquier edad si tienen una discapacidad reconocida.</p>
+      {hijos.map((h, i) => {
+        const cambiar = (c: Partial<typeof h>) => set('descendientes', hijos.map((x, j) => j === i ? { ...x, ...c } : x))
+        return (
+          <div key={i} className="acciones hijo">
+            <Campo etiqueta={`Año de nacimiento del hijo ${i + 1}`}>
+              <input type="number" min={1900} max={ejercicio} value={h.anioNacimiento}
+                onChange={(e) => cambiar({ anioNacimiento: Number(e.target.value) })} />
+            </Campo>
+            <SelectorDiscapacidad valor={h.discapacidad ?? 0} onChange={(g) => cambiar({ discapacidad: g, asistencia: g ? h.asistencia : false })} />
+            <label className="check">
+              <input type="checkbox" checked={!!h.asistencia} disabled={!h.discapacidad}
+                onChange={(e) => cambiar({ asistencia: e.target.checked })} />
+              Dependencia (ayuda de terceros o movilidad reducida)
+            </label>
+            <label className="check">
+              <input type="checkbox" checked={h.compartido} onChange={(e) => cambiar({ compartido: e.target.checked })} />
+              Lo comparto con el otro progenitor (50%)
+            </label>
+            <button className="peligro" onClick={() => set('descendientes', hijos.filter((_, j) => j !== i))}>Quitar</button>
+          </div>
+        )
+      })}
+      <button className="secundario" onClick={() => set('descendientes', [...hijos, { anioNacimiento: ejercicio, compartido: true, discapacidad: 0, asistencia: false }])}>Añadir hijo</button>
 
       <h2>Reducción de autónomo dependiente</h2>
       <label className="check">
@@ -231,5 +250,17 @@ function FormularioDatos({ datos, ejercicio, set }: {
       </label>
       <p className="nota">Si lo marcas, se aplica la reducción del art. 32.2.2º y desaparece el 5% de gastos de difícil justificación.</p>
     </div>
+  )
+}
+
+function SelectorDiscapacidad({ valor, onChange }: { valor: GradoDiscapacidad; onChange: (g: GradoDiscapacidad) => void }) {
+  return (
+    <Campo etiqueta="Discapacidad reconocida">
+      <select value={valor} onChange={(e) => onChange(Number(e.target.value) as GradoDiscapacidad)}>
+        <option value={0}>No</option>
+        <option value={33}>Del 33% al 64%</option>
+        <option value={65}>65% o más</option>
+      </select>
+    </Campo>
   )
 }

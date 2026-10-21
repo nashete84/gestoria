@@ -27,6 +27,11 @@ export function guardarDatosRenta(db: Db, ejercicio: number, entrada: DatosRenta
   const datos = Object.fromEntries(
     Object.keys(DATOS_RENTA_VACIOS).map((k) => [k, (entrada as unknown as Record<string, unknown>)?.[k]])
   ) as unknown as DatosRenta
+  if (Array.isArray(datos.descendientes)) {
+    datos.descendientes = datos.descendientes.map((h) => ({
+      anioNacimiento: h?.anioNacimiento, compartido: h?.compartido, discapacidad: h?.discapacidad ?? 0, asistencia: h?.asistencia ?? false
+    }))
+  }
   const errores = validarDatosRenta(datos, ejercicio)
   if (errores.length) throw new ErrorValidacion(errores)
   db.prepare('INSERT INTO renta_datos (ejercicio, datos) VALUES (?, ?) ON CONFLICT(ejercicio) DO UPDATE SET datos = excluded.datos')

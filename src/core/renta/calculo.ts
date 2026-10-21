@@ -7,6 +7,17 @@ import { porcentaje, redondear, type Centimos } from '../money'
 import type { Gasto, Ingreso, Perfil } from '../tipos'
 import { parametrosDe, type MinimosPersonales, type ParametrosRenta, type Tramo } from './parametros'
 
+export type GradoDiscapacidad = 0 | 33 | 65
+
+export interface Descendiente {
+  anioNacimiento: number
+  /** Convive también con el otro progenitor: el mínimo se reparte al 50%. */
+  compartido: boolean
+  discapacidad?: GradoDiscapacidad
+  /** Dependencia: necesita ayuda de terceros o tiene movilidad reducida. */
+  asistencia?: boolean
+}
+
 /** Datos que no salen de la contabilidad y que rellena el usuario en la pestaña Renta. */
 export interface DatosRenta {
   /** Rendimientos netos del trabajo y otras rentas de la base general (nóminas, alquileres...). */
@@ -21,7 +32,11 @@ export interface DatosRenta {
   /** Aportaciones a planes de pensiones de empleo simplificados para autónomos. */
   aportacionesPpes: Centimos
   anioNacimiento: number | null
-  descendientes: { anioNacimiento: number; compartido: boolean }[]
+  /** Tu grado de discapacidad: 0 (ninguna), 33 (33% a 64%) o 65 (65% o más). */
+  discapacidad?: GradoDiscapacidad
+  /** Necesitas ayuda de terceros o tienes movilidad reducida. */
+  asistencia?: boolean
+  descendientes: Descendiente[]
   /** Deducciones de la cuota (vivienda habitual antigua, donativos, autonómicas...). */
   deducciones: Centimos
   /** Cumple los requisitos del art. 32.2.2º (dependiente o único cliente, gastos ≤ 30%, ≥ 70% con retención). */
@@ -30,7 +45,7 @@ export interface DatosRenta {
 
 export const DATOS_RENTA_VACIOS: DatosRenta = {
   otrasRentasGenerales: 0, rentasAhorro: 0, retencionesOtras: 0, otrosPagosACuenta: 0,
-  aportacionesPensiones: 0, aportacionesPpes: 0, anioNacimiento: null, descendientes: [],
+  aportacionesPensiones: 0, aportacionesPpes: 0, anioNacimiento: null, discapacidad: 0, asistencia: false, descendientes: [],
   deducciones: 0, autonomoDependiente: false
 }
 
@@ -119,21 +134,32 @@ export function aplicarEscala(escala: Tramo[], base: Centimos): Centimos {
   return redondear(cuota)
 }
 
+/**
+ * Mínimo por discapacidad: 3.000 € (≥ 33%) o 9.000 € (≥ 65%), más 3.000 € de gastos de asistencia
+ * si el grado es ≥ 65% o necesita ayuda de terceros o tiene movilidad reducida (art. 60 LIRPF).
+ */
+function minimoDiscapacidad(m: MinimosPersonales, grado: GradoDiscapacidad | undefined, asistencia: boolean | undefined): Centimos {
+  if (!grado) return 0
+  const base = grado >= 65 ? m.discapacidad.grado65 : m.discapacidad.grado33
+  return base + (grado >= 65 || asistencia ? m.discapacidad.asistencia : 0)
+}
+
 /** Mínimo personal y familiar con la edad a 31 de diciembre del ejercicio. */
 export function minimoPersonalFamiliar(m: MinimosPersonales, ejercicio: number, d: DatosRenta): Centimos {
-  let total = m.contribuyente
+  let total = m.contribuyente + minimoDiscapacidad(m, d.discapacidad, d.asistencia)
   if (d.anioNacimiento) {
     const edad = ejercicio - d.anioNacimiento
     if (edad >= 65) total += m.mayor65
     if (edad >= 75) total += m.mayor75
   }
-  // Descendientes menores de 25 años, del mayor al menor (el orden decide el importe).
+  // Descendientes menores de 25 años, o de cualquier edad con discapacidad, del mayor al menor (el orden decide el importe).
   const hijos = d.descendientes
-    .filter((h) => h.anioNacimiento <= ejercicio && ejercicio - h.anioNacimiento < 25)
+    .filter((h) => h.anioNacimiento <= ejercicio && (ejercicio - h.anioNacimiento < 25 || (h.discapacidad ?? 0) > 0))
     .sort((a, b) => a.anioNacimiento - b.anioNacimiento)
   hijos.forEach((h, i) => {
     let importe = m.descendientes[Math.min(i, 3)]!
     if (ejercicio - h.anioNacimiento < 3) importe += m.descendienteMenor3
+    importe += minimoDiscapacidad(m, h.discapacidad, h.asistencia)
     total += h.compartido ? redondear(importe / 2) : importe
   })
   return total
@@ -293,6 +319,8 @@ export function calcularRenta(e: EntradaRenta, parametros: ParametrosRenta = par
   }
 }
 
+const gradoValido = (g: unknown) => g === undefined || g === 0 || g === 33 || g === 65
+
 export function validarDatosRenta(d: DatosRenta, ejercicio: number): string[] {
   const e: string[] = []
   const importes: (keyof DatosRenta)[] = ['rentasAhorro', 'retencionesOtras', 'otrosPagosACuenta', 'aportacionesPensiones', 'aportacionesPpes', 'deducciones']
@@ -306,7 +334,10 @@ export function validarDatosRenta(d: DatosRenta, ejercicio: number): string[] {
   if (!Array.isArray(d.descendientes) || d.descendientes.length > 20) e.push('La lista de hijos no es válida.')
   else if (d.descendientes.some((h) => !anioValido(h.anioNacimiento) || typeof h.compartido !== 'boolean')) {
     e.push('Revisa el año de nacimiento de los hijos.')
+  } else if (d.descendientes.some((h) => !gradoValido(h.discapacidad) || (h.asistencia !== undefined && typeof h.asistencia !== 'boolean'))) {
+    e.push('Revisa la discapacidad de los hijos.')
   }
+  if (!gradoValido(d.discapacidad) || (d.asistencia !== undefined && typeof d.asistencia !== 'boolean')) e.push('El grado de discapacidad no es válido.')
   if (typeof d.autonomoDependiente !== 'boolean') e.push('Valor no válido para autónomo dependiente.')
   return e
 }

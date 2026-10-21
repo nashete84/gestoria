@@ -122,3 +122,5 @@ Los gastos ya guardados no se recalculan. Descartado: una tabla completa por ep�
 **Fuera de alcance (avisado en pantalla):** declaración conjunta, rentas inmobiliarias, compensación de pérdidas, deducciones concretas (se introduce un total), límite conjunto de 3.700 € con la reducción de trabajo y el detalle de la reducción por rendimientos del trabajo (se introduce el neto reducido).
 
 **Pendiente de verificar:** mínimos personales y familiares de Madrid (puestos un 10% por encima de los estatales).
+
+**Discapacidad y dependencia (2026-10-21).** Para ti y para cada hijo: grado (no / 33-64% / 65% o más) y "dependencia" (ayuda de terceros o movilidad reducida). Mínimo de 3.000 € o 9.000 €, más 3.000 € de asistencia si el grado es del 65% o hay dependencia (art. 60 LIRPF). Los hijos con discapacidad cuentan a cualquier edad. Los importes de Madrid (un 10% más) están pendientes de verificar. Fuera de alcance: ascendientes.

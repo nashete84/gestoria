@@ -15,6 +15,8 @@ export interface MinimosPersonales {
   /** Por descendiente, del 1º al 4º y siguientes. */
   descendientes: [number, number, number, number]
   descendienteMenor3: number
+  /** Mínimo por discapacidad (del contribuyente o de cada descendiente): grado ≥ 33%, grado ≥ 65%, y gastos de asistencia. */
+  discapacidad: { grado33: number; grado65: number; asistencia: number }
 }
 
 export interface ParametrosRenta {
@@ -71,7 +73,8 @@ const AHORRO_ESTATAL_2025: Tramo[] = [...AHORRO_HASTA_2024.slice(0, 4), { hasta:
 
 const MINIMOS_ESTATALES: MinimosPersonales = {
   contribuyente: e(5550), mayor65: e(1150), mayor75: e(1400),
-  descendientes: [e(2400), e(2700), e(4000), e(4500)], descendienteMenor3: e(2800)
+  descendientes: [e(2400), e(2700), e(4000), e(4500)], descendienteMenor3: e(2800),
+  discapacidad: { grado33: e(3000), grado65: e(9000), asistencia: e(3000) }
 }
 
 const MADRID_GENERAL: Tramo[] = [
@@ -85,7 +88,8 @@ const MADRID_GENERAL: Tramo[] = [
 // Mínimos autonómicos de Madrid, un 10% por encima de los estatales (pendiente de verificar con la AEAT).
 const MINIMOS_MADRID: MinimosPersonales = {
   contribuyente: e(6105), mayor65: e(1265), mayor75: e(1540),
-  descendientes: [e(2640), e(2970), e(4400), e(4950)], descendienteMenor3: e(3080)
+  descendientes: [e(2640), e(2970), e(4400), e(4950)], descendienteMenor3: e(3080),
+  discapacidad: { grado33: e(3300), grado65: e(9900), asistencia: e(3300) }
 }
 
 const BASE_2024: Omit<ParametrosRenta, 'ejercicio' | 'avisos'> = {
