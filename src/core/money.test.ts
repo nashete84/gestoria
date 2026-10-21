@@ -7,7 +7,7 @@ describe('parsearEuros', () => {
     ['1234', 123400], ['1.234', 123400], ['-12,5', -1250], ['0,01', 1], [' 99 € ', 9900]
   ])('%s → %i', (texto, esperado) => expect(parsearEuros(texto)).toBe(esperado))
 
-  it.each(['', 'abc', '1,234,5', '12,345', '1.2.3'])('rechaza %s', (t) => {
+  it.each(['', 'abc', '1,234,5', '12,345', '1.2.3', '0.125'])('rechaza %s', (t) => {
     // "12,345" tiene tres decimales: ambiguo, se rechaza.
     expect(parsearEuros(t)).toBeNull()
   })

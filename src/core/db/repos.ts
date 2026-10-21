@@ -87,9 +87,10 @@ export function crearCliente(db: Db, entrada: ClienteNuevo): Cliente {
 export function actualizarCliente(db: Db, id: number, entrada: ClienteNuevo): Cliente {
   const c = prepararCliente(entrada)
   comprobar(validarCliente(c))
-  db.prepare(`UPDATE clientes SET tipo=@tipo, nombre=@nombre, nif=@nif, pais=@pais, domicilio=@domicilio,
+  const r = db.prepare(`UPDATE clientes SET tipo=@tipo, nombre=@nombre, nif=@nif, pais=@pais, domicilio=@domicilio,
     codigo_postal=@codigoPostal, municipio=@municipio, provincia=@provincia, email=@email, notas=@notas
     WHERE id=@id`).run({ ...c, id })
+  if (r.changes === 0) throw new ErrorValidacion(['El cliente no existe.'])
   return { ...c, id }
 }
 

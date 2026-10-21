@@ -48,6 +48,8 @@ export function PaginaGastos({ perfil }: { perfil: Perfil }) {
     try {
       if (editando.id === null) {
         const g = await llamar(api.crearGasto(editando.datos))
+        // Si falla el adjunto, un segundo Guardar actualiza este gasto en vez de duplicarlo.
+        setEditando({ ...editando, id: g.id })
         if (pendientes.length) await llamar(api.adjuntarElegidos('gasto', g.id, pendientes.map((p) => p.ficha)))
       } else {
         await llamar(api.actualizarGasto(editando.id, editando.datos))

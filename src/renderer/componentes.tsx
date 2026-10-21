@@ -41,7 +41,7 @@ export function CampoEuros({ valor, onChange }: { valor: number; onChange: (c: n
       onChange={(e) => {
         setTexto(e.target.value)
         const c = parsearEuros(e.target.value)
-        onChange(c ?? 0)
+        onChange(c ?? (e.target.value.trim() === '' ? 0 : NaN)) // NaN: the validator rejects it instead of saving 0
       }}
     />
   )

@@ -29,7 +29,7 @@ export function parsearEuros(texto: string): Centimos | null {
     else t = t.replace(/,/g, '')
   } else if (tieneComa) {
     t = t.replace(',', '.')
-  } else if (tienePunto && /^-?\d{1,3}(\.\d{3})+$/.test(t)) {
+  } else if (tienePunto && /^-?[1-9]\d{0,2}(\.\d{3})+$/.test(t)) {
     // "1.234" o "1.234.567" con punto solo como separador de miles.
     t = t.replace(/\./g, '')
   }

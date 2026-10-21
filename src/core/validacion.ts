@@ -65,6 +65,7 @@ export function validarIngreso(i: IngresoNuevo): string[] {
   if (i.operacion !== 'nacional' && i.tipoIva !== 0) {
     e.push('Las operaciones intracomunitarias o no sujetas no llevan IVA.')
   }
+  if (i.operacion !== 'nacional' && i.retencionPct !== 0) e.push('Las operaciones intracomunitarias o no sujetas no llevan retención.')
   return e
 }
 

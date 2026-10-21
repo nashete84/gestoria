@@ -146,7 +146,7 @@ export function PaginaIngresos({ perfil }: { perfil: Perfil }) {
             <Campo etiqueta="Tipo de operación">
               <select value={d.operacion} onChange={(e) => {
                 const operacion = e.target.value as OperacionIngreso
-                set({ operacion, tipoIva: operacion === 'nacional' ? 21 : 0 })
+                set(operacion === 'nacional' ? { operacion, tipoIva: 21 } : { operacion, tipoIva: 0, retencionPct: 0 })
               }}>
                 {Object.entries(OPERACIONES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
               </select>

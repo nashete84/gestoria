@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { perfilBase } from '../fixtures'
 import type { ClienteNuevo, GastoNuevo, IngresoNuevo } from '../tipos'
 import {
-  actividadFiscal, borrarCliente, crearCliente, registrarPresentacion, crearGasto, crearIngreso, ErrorValidacion, guardarPerfil, leerPerfil,
+  actividadFiscal, actualizarCliente, borrarCliente, crearCliente, registrarPresentacion, crearGasto, crearIngreso, ErrorValidacion, guardarPerfil, leerPerfil,
   listarIngresos, periodoTrimestre, resumen
 } from './repos'
 import { migrar } from './schema'
@@ -54,6 +54,13 @@ describe('clientes', () => {
     const c = crearCliente(db, clienteEs)
     crearIngreso(db, ingreso(c.id))
     expect(() => borrarCliente(db, c.id)).toThrow(/ingreso/)
+  })
+  it('avisa al actualizar un cliente que no existe', () => {
+    expect(() => actualizarCliente(db, 999, clienteEs)).toThrow(/no existe/)
+  })
+  it('rechaza retención en una operación intracomunitaria', () => {
+    const c = crearCliente(db, clienteEs)
+    expect(() => crearIngreso(db, ingreso(c.id, { operacion: 'intracomunitaria', tipoIva: 0 }))).toThrow(/retención/)
   })
 })
 

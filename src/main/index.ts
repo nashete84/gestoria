@@ -86,7 +86,7 @@ const handlers: Handlers = {
   actualizarCliente: (i, c) => repos.actualizarCliente(db, id(i), c),
   borrarCliente: (i) => repos.borrarCliente(db, id(i)),
 
-  listarIngresos: (d, h) => repos.listarIngresos(db, d, h),
+  listarIngresos: (d, h) => repos.listarIngresos(db, fechaValida(d), fechaValida(h)),
   crearIngreso: (n) => repos.crearIngreso(db, n),
   actualizarIngreso: (i, n) => repos.actualizarIngreso(db, id(i), n),
   borrarIngreso: async (i) => {
@@ -95,7 +95,7 @@ const handlers: Handlers = {
     await limpiarArchivos(adj.map((a) => a.ruta))
   },
 
-  listarGastos: (d, h) => repos.listarGastos(db, d, h),
+  listarGastos: (d, h) => repos.listarGastos(db, fechaValida(d), fechaValida(h)),
   crearGasto: (n) => repos.crearGasto(db, n),
   actualizarGasto: (i, n) => repos.actualizarGasto(db, id(i), n),
   borrarGasto: async (i) => {
@@ -129,9 +129,9 @@ const handlers: Handlers = {
       // Solo se copian archivos que el usuario eligió en el diálogo; nunca rutas enviadas por la interfaz.
       const origen = elegidos.get(ficha)
       if (!origen) continue
-      elegidos.delete(ficha)
       const copia = await copiarAdjunto(origen, carpetaAdjuntos())
       creados.push(repos.registrarAdjunto(db, { entidad: entidad(e), entidadId: id(i), ...copia }))
+      elegidos.delete(ficha) // solo tras copiar: si falla, se puede reintentar
     }
     return creados
   },
@@ -150,12 +150,12 @@ const handlers: Handlers = {
     if (a) await limpiarArchivos([a.ruta])
   },
 
-  resumen: (d, h) => repos.resumen(db, d, h),
+  resumen: (d, h) => repos.resumen(db, fechaValida(d), fechaValida(h)),
   calendarioFiscal: (hoy) => repos.calendarioFiscal(db, fechaValida(hoy)),
   registrarPresentacion: (p) => repos.registrarPresentacion(db, p),
   borrarPresentacion: (i) => repos.borrarPresentacion(db, id(i)),
 
-  listarFacturas: (d, h) => facturas.listarFacturas(db, d, h),
+  listarFacturas: (d, h) => facturas.listarFacturas(db, fechaValida(d), fechaValida(h)),
   emitirFactura: (i) => facturas.emitirFactura(db, id(i), hoyLocal()),
   detalleFactura: (i) => {
     const d = facturas.detalleFactura(db, id(i))
@@ -173,7 +173,13 @@ const handlers: Handlers = {
     return guardarPdf(d, `Borrador factura ${d.factura.numSerie}.pdf`)
   },
   xmlVerifactu: (i) => facturas.xmlEnvio(db, id(i)),
-  anularFactura: (i) => facturas.anularFactura(db, id(i)),
+  anularFactura: async (i) => {
+    const ingresoId = facturas.leerFactura(db, id(i))?.ingresoId
+    const adj = ingresoId ? repos.listarAdjuntos(db, 'ingreso', ingresoId) : []
+    const f = facturas.anularFactura(db, id(i))
+    await limpiarArchivos(adj.map((a) => a.ruta))
+    return f
+  },
   enviarVerifactu: () => {
     // Bloqueado a petición de Nacho: no se envía nada a la AEAT hasta que lo autorice.
     if (!ENVIO_HABILITADO) throw new repos.ErrorValidacion(['El envío a VERI*FACTU está desactivado mientras pruebas la aplicación.'])
@@ -252,8 +258,10 @@ async function limpiarArchivos(rutas: string[]) {
 
 function registrarIpc() {
   for (const [nombre, fn] of Object.entries(handlers)) {
-    ipcMain.handle(`gestoria:${nombre}`, async (_e, ...args): Promise<Resultado<unknown>> => {
+    ipcMain.handle(`gestoria:${nombre}`, async (e, ...args): Promise<Resultado<unknown>> => {
       try {
+        // Solo responde a la ventana principal, no a iframes ni otras webContents.
+        if (e.senderFrame !== ventana?.webContents.mainFrame) throw new repos.ErrorValidacion(['Origen no permitido.'])
         return { ok: true, datos: await fn(...args) }
       } catch (err) {
         if (err instanceof repos.ErrorValidacion) return { ok: false, errores: err.errores }
@@ -284,7 +292,7 @@ function crearVentana() {
   })
   ventana.webContents.on('will-navigate', (e) => e.preventDefault())
 
-  if (process.env.ELECTRON_RENDERER_URL) void ventana.loadURL(process.env.ELECTRON_RENDERER_URL)
+  if (!app.isPackaged && process.env.ELECTRON_RENDERER_URL) void ventana.loadURL(process.env.ELECTRON_RENDERER_URL)
   else void ventana.loadFile(join(__dirname, '../renderer/index.html'))
 }
 
