@@ -60,8 +60,11 @@ export function ChatAsistente() {
 
   if (!abierto) {
     return (
-      <button className="lanzador-chat" title="Asistente: dudas de Hacienda y de la app" onClick={() => setAbierto(true)}>
-        {enCurso ? '…' : '?'}
+      <button className="lanzador-chat" aria-label="Abrir el asistente" title="Asistente: dudas de Hacienda y de la app" onClick={() => setAbierto(true)}>
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M21 12a8 8 0 0 1-11.6 7.1L4 20.5l1.4-4.9A8 8 0 1 1 21 12z" />
+          {enCurso ? <><circle cx="9" cy="12" r=".6" fill="currentColor" /><circle cx="13" cy="12" r=".6" fill="currentColor" /><circle cx="17" cy="12" r=".6" fill="currentColor" /></> : null}
+        </svg>
       </button>
     )
   }

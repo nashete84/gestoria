@@ -100,7 +100,7 @@ table.desglose tr.info td { color: var(--suave); font-size: 12px; }
 .obligacion .botones { display: flex; gap: 6px; }
 .casillas table.desglose { margin-top: 8px; }
 .casillas .etiqueta { margin-left: 0; margin-right: 6px; font-variant-numeric: tabular-nums; }
-.lanzador-chat { position: fixed; right: 24px; bottom: 24px; width: 52px; height: 52px; border-radius: 50%; font-size: 22px; font-weight: 700; padding: 0; box-shadow: 0 4px 14px rgba(0, 0, 0, .25); z-index: 20; }
+.lanzador-chat { position: fixed; right: 24px; bottom: 24px; width: 52px; height: 52px; border-radius: 50%; padding: 0; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 14px rgba(0, 0, 0, .25); z-index: 20; }
 .ventana-chat { position: fixed; right: 24px; bottom: 24px; width: min(400px, calc(100vw - 48px)); height: min(600px, calc(100vh - 48px)); display: flex; flex-direction: column; background: var(--fondo); border: 1px solid var(--borde); border-radius: 14px; box-shadow: 0 10px 30px rgba(0, 0, 0, .25); z-index: 20; overflow: hidden; }
 .ventana-chat header { display: flex; align-items: center; gap: 8px; padding: 10px 14px; background: var(--panel); border-bottom: 1px solid var(--borde); }
 .ventana-chat header strong { margin-right: auto; }
