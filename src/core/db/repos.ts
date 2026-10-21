@@ -1,0 +1,277 @@
+import type BetterSqlite3 from 'better-sqlite3'
+import { calcularGasto, calcularIngreso } from '../fiscalidad'
+import { porcentaje } from '../money'
+import { normalizarNif } from '../nif'
+export { periodoTrimestre } from '../periodos'
+import type {
+  Adjunto, Cliente, ClienteNuevo, Gasto, GastoNuevo, Ingreso, IngresoNuevo, Perfil
+} from '../tipos'
+import { validarCliente, validarGasto, validarIngreso, validarPerfil } from '../validacion'
+
+type Db = BetterSqlite3.Database
+type Fila = Record<string, unknown>
+
+export class ErrorValidacion extends Error {
+  constructor(public errores: string[]) {
+    super(errores.join(' '))
+    this.name = 'ErrorValidacion'
+  }
+}
+
+function comprobar(errores: string[]): void {
+  if (errores.length) throw new ErrorValidacion(errores)
+}
+
+// ---------- Perfil ----------
+
+export function leerPerfil(db: Db): Perfil | null {
+  const fila = db.prepare('SELECT datos FROM perfil WHERE id = 1').get() as { datos: string } | undefined
+  return fila ? (JSON.parse(fila.datos) as Perfil) : null
+}
+
+export function guardarPerfil(db: Db, p: Perfil): Perfil {
+  const perfil = { ...p, nif: normalizarNif(p.nif) }
+  comprobar(validarPerfil(perfil))
+  db.prepare(
+    'INSERT INTO perfil (id, datos) VALUES (1, ?) ON CONFLICT(id) DO UPDATE SET datos = excluded.datos'
+  ).run(JSON.stringify(perfil))
+  return perfil
+}
+
+// ---------- Clientes ----------
+
+function aCliente(f: Fila): Cliente {
+  return {
+    id: f.id as number, tipo: f.tipo as Cliente['tipo'], nombre: f.nombre as string,
+    nif: f.nif as string, pais: f.pais as string, domicilio: f.domicilio as string,
+    codigoPostal: f.codigo_postal as string, municipio: f.municipio as string,
+    provincia: f.provincia as string, email: f.email as string, notas: f.notas as string
+  }
+}
+
+function prepararCliente(c: ClienteNuevo): ClienteNuevo {
+  return { ...c, nif: normalizarNif(c.nif), pais: c.pais.trim().toUpperCase() }
+}
+
+export function listarClientes(db: Db): Cliente[] {
+  return (db.prepare('SELECT * FROM clientes ORDER BY nombre COLLATE NOCASE').all() as Fila[]).map(aCliente)
+}
+
+export function crearCliente(db: Db, entrada: ClienteNuevo): Cliente {
+  const c = prepararCliente(entrada)
+  comprobar(validarCliente(c))
+  const r = db.prepare(`INSERT INTO clientes
+    (tipo, nombre, nif, pais, domicilio, codigo_postal, municipio, provincia, email, notas)
+    VALUES (@tipo, @nombre, @nif, @pais, @domicilio, @codigoPostal, @municipio, @provincia, @email, @notas)`
+  ).run(c)
+  return { ...c, id: Number(r.lastInsertRowid) }
+}
+
+export function actualizarCliente(db: Db, id: number, entrada: ClienteNuevo): Cliente {
+  const c = prepararCliente(entrada)
+  comprobar(validarCliente(c))
+  db.prepare(`UPDATE clientes SET tipo=@tipo, nombre=@nombre, nif=@nif, pais=@pais, domicilio=@domicilio,
+    codigo_postal=@codigoPostal, municipio=@municipio, provincia=@provincia, email=@email, notas=@notas
+    WHERE id=@id`).run({ ...c, id })
+  return { ...c, id }
+}
+
+export function borrarCliente(db: Db, id: number): void {
+  const usos = db.prepare('SELECT COUNT(*) n FROM ingresos WHERE cliente_id = ?').get(id) as { n: number }
+  if (usos.n > 0) {
+    throw new ErrorValidacion([`No se puede borrar: el cliente tiene ${usos.n} ingreso(s) registrados.`])
+  }
+  db.prepare('DELETE FROM clientes WHERE id = ?').run(id)
+}
+
+// ---------- Ingresos ----------
+
+function aIngreso(f: Fila): Ingreso {
+  return {
+    id: f.id as number, fecha: f.fecha as string, clienteId: (f.cliente_id as number | null) ?? null,
+    concepto: f.concepto as string, base: f.base as number, tipoIva: f.tipo_iva as number,
+    cuotaIva: f.cuota_iva as number, retencionPct: f.retencion_pct as number,
+    cuotaRetencion: f.cuota_retencion as number, operacion: f.operacion as Ingreso['operacion'],
+    facturaId: (f.factura_id as number | null) ?? null, notas: f.notas as string
+  }
+}
+
+export function listarIngresos(db: Db, desde: string, hasta: string): Ingreso[] {
+  return (db.prepare('SELECT * FROM ingresos WHERE fecha BETWEEN ? AND ? ORDER BY fecha DESC, id DESC')
+    .all(desde, hasta) as Fila[]).map(aIngreso)
+}
+
+function filaIngreso(n: IngresoNuevo) {
+  comprobar(validarIngreso(n))
+  return { ...n, ...calcularIngreso(n) }
+}
+
+export function crearIngreso(db: Db, n: IngresoNuevo): Ingreso {
+  const f = filaIngreso(n)
+  const r = db.prepare(`INSERT INTO ingresos
+    (fecha, cliente_id, concepto, base, tipo_iva, cuota_iva, retencion_pct, cuota_retencion, operacion, notas)
+    VALUES (@fecha, @clienteId, @concepto, @base, @tipoIva, @cuotaIva, @retencionPct, @cuotaRetencion, @operacion, @notas)`
+  ).run(f)
+  return { ...f, id: Number(r.lastInsertRowid), facturaId: null }
+}
+
+export function actualizarIngreso(db: Db, id: number, n: IngresoNuevo): Ingreso {
+  const actual = db.prepare('SELECT factura_id FROM ingresos WHERE id = ?').get(id) as { factura_id: number | null } | undefined
+  if (!actual) throw new ErrorValidacion(['El ingreso no existe.'])
+  if (actual.factura_id) throw new ErrorValidacion(['Este ingreso viene de una factura: corrígelo con una factura rectificativa.'])
+  const f = filaIngreso(n)
+  db.prepare(`UPDATE ingresos SET fecha=@fecha, cliente_id=@clienteId, concepto=@concepto, base=@base,
+    tipo_iva=@tipoIva, cuota_iva=@cuotaIva, retencion_pct=@retencionPct, cuota_retencion=@cuotaRetencion,
+    operacion=@operacion, notas=@notas WHERE id=@id`).run({ ...f, id })
+  return { ...f, id, facturaId: null }
+}
+
+export function borrarIngreso(db: Db, id: number): void {
+  const actual = db.prepare('SELECT factura_id FROM ingresos WHERE id = ?').get(id) as { factura_id: number | null } | undefined
+  if (actual?.factura_id) throw new ErrorValidacion(['Este ingreso viene de una factura y no se puede borrar.'])
+  db.transaction(() => {
+    db.prepare("DELETE FROM adjuntos WHERE entidad = 'ingreso' AND entidad_id = ?").run(id)
+    db.prepare('DELETE FROM ingresos WHERE id = ?').run(id)
+  })()
+}
+
+// ---------- Gastos ----------
+
+function aGasto(f: Fila): Gasto {
+  return {
+    id: f.id as number, fecha: f.fecha as string, proveedor: f.proveedor as string,
+    nifProveedor: f.nif_proveedor as string, paisProveedor: f.pais_proveedor as string,
+    numeroFactura: f.numero_factura as string, concepto: f.concepto as string,
+    categoria: f.categoria as string, base: f.base as number, tipoIva: f.tipo_iva as number,
+    cuotaIva: f.cuota_iva as number, deduciblePctIrpf: f.deducible_pct_irpf as number,
+    deduciblePctIva: f.deducible_pct_iva as number, retencionPct: f.retencion_pct as number,
+    cuotaRetencion: f.cuota_retencion as number, operacion: f.operacion as Gasto['operacion'],
+    bienInversion: f.bien_inversion === 1, notas: f.notas as string
+  }
+}
+
+function filaGasto(n: GastoNuevo) {
+  const g = { ...n, nifProveedor: normalizarNif(n.nifProveedor), paisProveedor: n.paisProveedor.trim().toUpperCase() }
+  comprobar(validarGasto(g))
+  return { ...g, ...calcularGasto(g) }
+}
+
+const COLUMNAS_GASTO = `fecha=@fecha, proveedor=@proveedor, nif_proveedor=@nifProveedor,
+  pais_proveedor=@paisProveedor, numero_factura=@numeroFactura, concepto=@concepto, categoria=@categoria,
+  base=@base, tipo_iva=@tipoIva, cuota_iva=@cuotaIva, deducible_pct_irpf=@deduciblePctIrpf,
+  deducible_pct_iva=@deduciblePctIva, retencion_pct=@retencionPct, cuota_retencion=@cuotaRetencion,
+  operacion=@operacion, bien_inversion=@bienInversionN, notas=@notas`
+
+export function listarGastos(db: Db, desde: string, hasta: string): Gasto[] {
+  return (db.prepare('SELECT * FROM gastos WHERE fecha BETWEEN ? AND ? ORDER BY fecha DESC, id DESC')
+    .all(desde, hasta) as Fila[]).map(aGasto)
+}
+
+export function crearGasto(db: Db, n: GastoNuevo): Gasto {
+  const f = filaGasto(n)
+  const r = db.prepare(`INSERT INTO gastos (fecha, proveedor, nif_proveedor, pais_proveedor, numero_factura,
+    concepto, categoria, base, tipo_iva, cuota_iva, deducible_pct_irpf, deducible_pct_iva, retencion_pct,
+    cuota_retencion, operacion, bien_inversion, notas) VALUES (@fecha, @proveedor, @nifProveedor,
+    @paisProveedor, @numeroFactura, @concepto, @categoria, @base, @tipoIva, @cuotaIva, @deduciblePctIrpf,
+    @deduciblePctIva, @retencionPct, @cuotaRetencion, @operacion, @bienInversionN, @notas)`
+  ).run({ ...f, bienInversionN: f.bienInversion ? 1 : 0 })
+  return { ...f, id: Number(r.lastInsertRowid) }
+}
+
+export function actualizarGasto(db: Db, id: number, n: GastoNuevo): Gasto {
+  const f = filaGasto(n)
+  const r = db.prepare(`UPDATE gastos SET ${COLUMNAS_GASTO} WHERE id=@id`)
+    .run({ ...f, bienInversionN: f.bienInversion ? 1 : 0, id })
+  if (r.changes === 0) throw new ErrorValidacion(['El gasto no existe.'])
+  return { ...f, id }
+}
+
+export function borrarGasto(db: Db, id: number): void {
+  db.transaction(() => {
+    db.prepare("DELETE FROM adjuntos WHERE entidad = 'gasto' AND entidad_id = ?").run(id)
+    db.prepare('DELETE FROM gastos WHERE id = ?').run(id)
+  })()
+}
+
+// ---------- Adjuntos ----------
+
+function aAdjunto(f: Fila): Adjunto {
+  return {
+    id: f.id as number, entidad: f.entidad as Adjunto['entidad'], entidadId: f.entidad_id as number,
+    nombre: f.nombre as string, ruta: f.ruta as string, sha256: f.sha256 as string, creado: f.creado as string
+  }
+}
+
+export function listarAdjuntos(db: Db, entidad: Adjunto['entidad'], entidadId: number): Adjunto[] {
+  return (db.prepare('SELECT * FROM adjuntos WHERE entidad = ? AND entidad_id = ? ORDER BY id')
+    .all(entidad, entidadId) as Fila[]).map(aAdjunto)
+}
+
+export function registrarAdjunto(db: Db, a: Omit<Adjunto, 'id' | 'creado'>): Adjunto {
+  const r = db.prepare(`INSERT INTO adjuntos (entidad, entidad_id, nombre, ruta, sha256)
+    VALUES (@entidad, @entidadId, @nombre, @ruta, @sha256)`).run(a)
+  return leerAdjunto(db, Number(r.lastInsertRowid))!
+}
+
+export function leerAdjunto(db: Db, id: number): Adjunto | null {
+  const f = db.prepare('SELECT * FROM adjuntos WHERE id = ?').get(id) as Fila | undefined
+  return f ? aAdjunto(f) : null
+}
+
+export function borrarAdjunto(db: Db, id: number): Adjunto | null {
+  const a = leerAdjunto(db, id)
+  db.prepare('DELETE FROM adjuntos WHERE id = ?').run(id)
+  return a
+}
+
+/** ¿Otro adjunto usa el mismo fichero? (los ficheros se guardan por hash y pueden compartirse). */
+export function rutaEnUso(db: Db, ruta: string): boolean {
+  return (db.prepare('SELECT COUNT(*) n FROM adjuntos WHERE ruta = ?').get(ruta) as { n: number }).n > 0
+}
+
+// ---------- Resumen ----------
+
+export interface Resumen {
+  desde: string
+  hasta: string
+  ingresosBase: number
+  ivaRepercutido: number
+  retencionesSoportadas: number
+  gastosDeducibles: number
+  ivaSoportadoDeducible: number
+  rendimientoNeto: number
+  ivaResultado: number
+  retencionesPracticadas: number
+  bienesInversionPendientes: number
+}
+
+/**
+ * Resumen provisional del periodo. No sustituye al cálculo de los modelos (paso 3):
+ * por ejemplo, no incluye amortizaciones ni el 5% de gastos de difícil justificación.
+ */
+export function resumen(db: Db, desde: string, hasta: string): Resumen {
+  const ingresos = listarIngresos(db, desde, hasta)
+  const gastos = listarGastos(db, desde, hasta)
+  const suma = (xs: number[]) => xs.reduce((a, b) => a + b, 0)
+
+  const ingresosBase = suma(ingresos.map((i) => i.base))
+  const ivaRepercutido = suma(ingresos.map((i) => i.cuotaIva))
+  // IVA autoliquidado en compras con inversión del sujeto pasivo: suma al devengado y al deducible.
+  const ivaAutoliquidado = suma(gastos.filter((g) => g.operacion === 'intracomunitaria' || g.operacion === 'extracomunitaria').map((g) => g.cuotaIva))
+  const corrientes = gastos.filter((g) => !g.bienInversion)
+  const gastosDeducibles = suma(corrientes.map((g) => porcentaje(g.base, g.deduciblePctIrpf)))
+  const ivaSoportadoDeducible = suma(gastos.map((g) => porcentaje(g.cuotaIva, g.deduciblePctIva)))
+
+  return {
+    desde, hasta,
+    ingresosBase,
+    ivaRepercutido,
+    retencionesSoportadas: suma(ingresos.map((i) => i.cuotaRetencion)),
+    gastosDeducibles,
+    ivaSoportadoDeducible,
+    rendimientoNeto: ingresosBase - gastosDeducibles,
+    ivaResultado: ivaRepercutido + ivaAutoliquidado - ivaSoportadoDeducible,
+    retencionesPracticadas: suma(gastos.map((g) => g.cuotaRetencion)),
+    bienesInversionPendientes: gastos.filter((g) => g.bienInversion).length
+  }
+}
