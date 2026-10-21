@@ -106,11 +106,15 @@ export function calcular347(ingresos: Ingreso[], gastos: Gasto[], clientes: Clie
     if (!c) continue
     anadir({ nif: normalizarNif(c.nif), nombre: c.nombre, provincia: c.codigoPostal.slice(0, 2) || '99', pais: c.pais, clave: 'B' }, i.fecha, i.base + i.cuotaIva)
   }
+  let sinProveedor = 0
   for (const g of gastos) {
     if (!g.fecha.startsWith(anio) || g.operacion !== 'nacional' || g.cuotaRetencion > 0 || CATEGORIAS_FUERA_347.includes(g.categoria)) continue
+    // Sin proveedor ni NIF no se sabe a quién se pagó: no se puede agrupar por tercero.
+    if (!g.proveedor.trim() && !g.nifProveedor.trim()) { sinProveedor += g.base + g.cuotaIva; continue }
     anadir({ nif: normalizarNif(g.nifProveedor), nombre: g.proveedor, provincia: '', pais: g.paisProveedor, clave: 'A' }, g.fecha, g.base + g.cuotaIva)
   }
 
+  if (sinProveedor > LIMITE_347) avisos.push('Tienes gastos sin proveedor que suman más de 3.005,06 €: si a un mismo proveedor le has pagado más de esa cantidad en el año, indícalo en esos gastos para que entre en el 347.')
   const terceros = [...grupos.values()].filter((t) => t.importe > LIMITE_347).sort((a, b) => a.clave.localeCompare(b.clave) || a.nombre.localeCompare(b.nombre))
   for (const t of terceros) {
     if (!t.nif) avisos.push(`${t.nombre} supera 3.005,06 € y no tiene NIF: añádelo antes de presentar el 347.`)

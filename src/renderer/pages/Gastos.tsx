@@ -103,7 +103,7 @@ export function PaginaGastos({ perfil }: { perfil: Perfil }) {
               </select>
             </Campo>
             <Campo etiqueta="Fecha"><input type="date" value={d.fecha} autoFocus={!!editando.copiaDe} onChange={(e) => set({ fecha: e.target.value })} /></Campo>
-            <Campo etiqueta="Proveedor"><input value={d.proveedor} onChange={(e) => set({ proveedor: e.target.value })} /></Campo>
+            <Campo etiqueta="Proveedor (opcional)" ayuda={d.retencionPct > 0 || d.operacion === 'intracomunitaria' ? 'Obligatorio con retención o si es de la UE.' : undefined}><input value={d.proveedor} onChange={(e) => set({ proveedor: e.target.value })} /></Campo>
             <Campo etiqueta="NIF del proveedor"><input value={d.nifProveedor} onChange={(e) => set({ nifProveedor: e.target.value })} /></Campo>
             <Campo etiqueta="País del proveedor"><input value={d.paisProveedor} maxLength={2} onChange={(e) => set({ paisProveedor: e.target.value.toUpperCase() })} /></Campo>
             <Campo etiqueta="Nº de factura"><input value={d.numeroFactura} onChange={(e) => set({ numeroFactura: e.target.value })} /></Campo>
@@ -159,7 +159,7 @@ export function PaginaGastos({ perfil }: { perfil: Perfil }) {
           {gastos.map((g) => (
             <tr key={g.id}>
               <td>{g.fecha}</td>
-              <td>{g.proveedor}</td>
+              <td>{g.proveedor || '—'}</td>
               <td>{g.concepto}</td>
               <td>{nombreCategoria(g.categoria)}{g.bienInversion ? ' · inversión' : ''}</td>
               <td className="num">{euros(g.base)}</td>

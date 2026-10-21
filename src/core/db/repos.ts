@@ -357,6 +357,7 @@ export function actividadFiscal(db: Db): Actividad {
       UNION ALL
       SELECT substr(g.fecha, 1, 4) anio, COALESCE(NULLIF(g.nif_proveedor, ''), g.proveedor) tercero, SUM(g.base + g.cuota_iva) total
         FROM gastos g WHERE g.operacion = 'nacional' AND g.cuota_retencion = 0 AND g.categoria <> 'cuota_autonomo'
+          AND (TRIM(g.proveedor) <> '' OR TRIM(g.nif_proveedor) <> '')
         GROUP BY anio, tercero
     ) WHERE total > ${LIMITE_347}`).all() as { anio: string }[]
   return {

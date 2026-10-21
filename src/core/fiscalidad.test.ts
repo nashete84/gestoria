@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { calcularGasto, calcularIngreso, retencionProfesional, sugerirFiscalidadIngreso } from './fiscalidad'
 import { perfilBase } from './fixtures'
 import type { Cliente } from './tipos'
+import { validarGasto } from './validacion'
 
 
 const cliente = (pais: string, tipo: Cliente['tipo']): Cliente => ({
@@ -75,5 +76,17 @@ describe('varias actividades', () => {
     expect(retencionProfesional(p, '2026-05-01', 'a1')).toBe(15)
     expect(retencionProfesional(p, '2026-05-01', 'a2')).toBe(0)
     expect(retencionProfesional(p, '2026-05-01', null)).toBe(15)
+  })
+})
+
+describe('proveedor opcional en gastos', () => {
+  const g = {
+    fecha: '2026-03-01', proveedor: '', nifProveedor: '', paisProveedor: 'ES', numeroFactura: '', actividadId: null, concepto: 'Ticket parking',
+    categoria: 'otros', base: 500, tipoIva: 21, deduciblePctIrpf: 100, deduciblePctIva: 100, retencionPct: 0, operacion: 'nacional' as const, bienInversion: false, notas: ''
+  }
+  it('sin retención ni UE no hace falta', () => expect(validarGasto(g)).toEqual([]))
+  it('con retención o compra UE sí', () => {
+    expect(validarGasto({ ...g, retencionPct: 15 }).join(' ')).toMatch(/proveedor/)
+    expect(validarGasto({ ...g, operacion: 'intracomunitaria', tipoIva: 0 }).join(' ')).toMatch(/proveedor/)
   })
 })

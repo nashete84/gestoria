@@ -50,7 +50,7 @@ export const FICHAS: Ficha[] = [
   {
     id: 'app-gasto', tipo: 'app', titulo: 'Añadir un gasto',
     claves: 'nuevo gasto compra pago factura recibida proveedor ticket apuntar',
-    texto: 'Ve a la pestaña Gastos. Elige primero la categoría: rellena sola el IVA, los % deducibles y la retención típicos, y puedes cambiarlos. Después pon fecha, proveedor, NIF del proveedor, nº de factura, concepto y base imponible. Tipo de operación: "Proveedor español con IVA", "Proveedor UE sin IVA (autoliquidas)" o "Proveedor fuera de la UE (autoliquidas)" para compras sin IVA a empresas extranjeras, y "Sin IVA" para cuota de autónomos, seguros o comisiones. Pulsa Guardar.',
+    texto: 'Ve a la pestaña Gastos. Elige primero la categoría: rellena sola el IVA, los % deducibles y la retención típicos, y puedes cambiarlos. Después pon fecha, concepto y base imponible. El proveedor, su NIF y el nº de factura son opcionales, salvo el proveedor en gastos con retención o de la UE. Tipo de operación: "Proveedor español con IVA", "Proveedor UE sin IVA (autoliquidas)" o "Proveedor fuera de la UE (autoliquidas)" para compras sin IVA a empresas extranjeras, y "Sin IVA" para cuota de autónomos, seguros o comisiones. Pulsa Guardar.',
     fuentes: []
   },
   {

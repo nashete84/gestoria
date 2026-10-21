@@ -174,4 +174,11 @@ describe('349 y 347', () => {
     // Ventas: (2.000 + 500) × 1,21 = 3.025; compras: 2.400 × 1,21 = 2.904 (no llega)
     expect(r.terceros).toEqual([{ nif: 'B12345674', nombre: 'Acme SL', provincia: '28', pais: 'ES', clave: 'B', importe: e(3025), trimestres: [e(2420), 0, e(605), 0] }])
   })
+
+  it('347: los gastos sin proveedor ni NIF no se agrupan como un tercero, pero se avisa si suman mucho', () => {
+    const anonimo = { proveedor: '', nifProveedor: '' }
+    const r = calcular347([], [gasto('2026-03-01', 2000, anonimo), gasto('2026-05-01', 2000, anonimo)], clientes, 2026)
+    expect(r.terceros).toEqual([])
+    expect(r.avisos.join(' ')).toMatch(/sin proveedor/)
+  })
 })

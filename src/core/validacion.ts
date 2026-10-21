@@ -71,7 +71,9 @@ export function validarIngreso(i: IngresoNuevo): string[] {
 export function validarGasto(g: GastoNuevo): string[] {
   const e: string[] = []
   if (!fechaValida(g.fecha)) e.push('La fecha no es válida.')
-  if (!g.proveedor.trim()) e.push('Falta el proveedor.')
+  // El proveedor es opcional salvo donde un modelo lo pide: retenciones (111/115 y 190/180) y compras a la UE (349).
+  if (!g.proveedor.trim() && g.retencionPct > 0) e.push('Con retención hay que indicar el proveedor (va en el resumen anual 190 o 180).')
+  if (!g.proveedor.trim() && g.operacion === 'intracomunitaria') e.push('En las compras a la UE hay que indicar el proveedor (va en el 349).')
   if (!g.concepto.trim()) e.push('Falta el concepto.')
   if (!Number.isInteger(g.base)) e.push('La base debe ser un importe en céntimos.')
   for (const [nombre, v] of [
