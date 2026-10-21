@@ -8,6 +8,19 @@ export interface Epigrafe {
   descripcion: string
 }
 
+export interface PorcentajesDeducibles {
+  irpf: number
+  iva: number
+}
+
+/** Una actividad dada de alta (un epígrafe del IAE) con sus % deducibles por categoría de gasto. */
+export interface Actividad extends Epigrafe {
+  id: string
+  principal: boolean
+  /** % deducible por id de categoría. Si falta una categoría se usa el valor general. */
+  deducibles: Record<string, PorcentajesDeducibles>
+}
+
 export interface Perfil {
   nif: string
   nombre: string
@@ -18,7 +31,8 @@ export interface Perfil {
   email: string
   telefono: string
   iban: string
-  epigrafe: Epigrafe
+  /** Actividades dadas de alta. Siempre hay al menos una y exactamente una es la principal. */
+  actividades: Actividad[]
   /** Fecha de alta en la actividad (AAAA-MM-DD), decide la retención reducida del 7%. */
   fechaAlta: string
   /** Si en el año anterior al alta ya ejercía actividad, no hay derecho al 7%. */
@@ -68,6 +82,8 @@ export interface Ingreso {
   id: number
   fecha: string
   clienteId: number | null
+  /** Actividad a la que pertenece; null = la principal. */
+  actividadId: string | null
   concepto: string
   base: Centimos
   tipoIva: number
@@ -98,6 +114,8 @@ export interface Gasto {
   nifProveedor: string
   paisProveedor: string
   numeroFactura: string
+  /** Actividad a la que pertenece; null = la principal. */
+  actividadId: string | null
   concepto: string
   categoria: string
   base: Centimos

@@ -51,7 +51,7 @@ export function App() {
             {m.id === 'impuestos' && pendientes > 0 ? <span className="insignia">{pendientes}</span> : null}
           </button>
         ))}
-        {perfil ? <div className="pie">{perfil.nombre}<br />IAE {perfil.epigrafe.codigo}</div> : null}
+        {perfil ? <div className="pie">{perfil.nombre}<br />IAE {perfil.actividades.map((a) => a.codigo).join(', ')}</div> : null}
       </nav>
       <main className="contenido">
         {!perfil ? <p className="avisos">Empieza rellenando tu perfil fiscal.</p> : null}

@@ -87,3 +87,7 @@ pre.xml { background: var(--fondo); border: 1px solid var(--borde); border-radiu
 .modal-caja { background: var(--panel); border-radius: 12px; padding: 16px 20px; width: min(900px, 100%); height: 100%; display: flex; flex-direction: column; }
 .modal-caja iframe { flex: 1; width: 100%; border: 1px solid var(--borde); border-radius: 6px; background: #fff; }
 .nota.deducible { background: var(--acento-suave); padding: 6px 10px; border-radius: 6px; color: var(--texto); }
+.actividad-cabecera { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.actividad-cabecera .acciones { margin-top: 0; }
+table.deducibles { margin: 8px 0; }
+table.deducibles input { width: 90px; text-align: right; }

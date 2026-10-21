@@ -20,7 +20,19 @@ export function validarPerfil(p: Perfil): string[] {
   const e: string[] = []
   if (!esNifValido(p.nif)) e.push('El NIF no es válido.')
   if (!p.nombre.trim()) e.push('Falta el nombre.')
-  if (!p.epigrafe.codigo.trim()) e.push('Falta el epígrafe del IAE.')
+  if (!p.actividades?.length) e.push('Da de alta al menos una actividad (epígrafe del IAE).')
+  else {
+    if (p.actividades.filter((a) => a.principal).length !== 1) e.push('Marca una sola actividad como principal.')
+    if (p.actividades.some((a) => !a.codigo.trim())) e.push('Falta el código del epígrafe en alguna actividad.')
+    const claves = p.actividades.map((a) => `${a.seccion}-${a.codigo.trim()}`)
+    if (new Set(claves).size !== claves.length) e.push('Hay una actividad repetida.')
+    if (new Set(p.actividades.map((a) => a.id)).size !== p.actividades.length) e.push('Identificadores de actividad repetidos.')
+    for (const a of p.actividades) {
+      for (const [cat, v] of Object.entries(a.deducibles ?? {})) {
+        if (!pctValido(v.irpf) || !pctValido(v.iva)) e.push(`% deducible no válido en ${a.codigo} (${cat}).`)
+      }
+    }
+  }
   if (!fechaValida(p.fechaAlta)) e.push('La fecha de alta no es válida.')
   if (p.pctViviendaAfecta !== undefined && !pctValido(p.pctViviendaAfecta)) e.push('El % de vivienda afecta debe estar entre 0 y 100.')
   return e

@@ -19,18 +19,18 @@ const clienteEs: ClienteNuevo = {
   municipio: '', provincia: '', email: '', notas: ''
 }
 const ingreso = (clienteId: number, extra: Partial<IngresoNuevo> = {}): IngresoNuevo => ({
-  fecha: '2026-02-10', clienteId, concepto: 'Desarrollo web', base: 200000, tipoIva: 21,
+  fecha: '2026-02-10', clienteId, actividadId: null, concepto: 'Desarrollo web', base: 200000, tipoIva: 21,
   retencionPct: 15, operacion: 'nacional', notas: '', ...extra
 })
 const gasto = (extra: Partial<GastoNuevo> = {}): GastoNuevo => ({
-  fecha: '2026-03-01', proveedor: 'Iberdrola', nifProveedor: '', paisProveedor: 'ES', numeroFactura: 'F1',
+  fecha: '2026-03-01', proveedor: 'Iberdrola', nifProveedor: '', paisProveedor: 'ES', numeroFactura: 'F1', actividadId: null,
   concepto: 'Luz', categoria: 'suministros_vivienda', base: 10000, tipoIva: 21, deduciblePctIrpf: 30,
   deduciblePctIva: 30, retencionPct: 0, operacion: 'nacional', bienInversion: false, notas: '', ...extra
 })
 
 it('las migraciones son idempotentes', () => {
   migrar(db)
-  expect(db.pragma('user_version', { simple: true })).toBe(3)
+  expect(db.pragma('user_version', { simple: true })).toBe(4)
 })
 
 it('guarda y lee el perfil normalizando el NIF', () => {
@@ -106,5 +106,23 @@ describe('presentaciones y actividad', () => {
       retencionesProfesionales: ['2026-2T'], retencionesAlquiler: ['2026-3T'],
       intracomunitarias: ['2026-4T'], ejerciciosCon347: [2026]
     })
+  })
+})
+
+describe('actividades', () => {
+  it('no deja quitar una actividad con ingresos', () => {
+    const extra = { id: 'a2', seccion: 1 as const, codigo: '845', descripcion: 'x', principal: false, deducibles: {} }
+    guardarPerfil(db, { ...perfilBase, actividades: [...perfilBase.actividades, extra] })
+    const c = crearCliente(db, clienteEs)
+    crearIngreso(db, ingreso(c.id, { actividadId: 'a2' }))
+    expect(() => guardarPerfil(db, perfilBase)).toThrow(/No se puede quitar la actividad 845/)
+  })
+  it('rechaza una actividad que no existe', () => {
+    guardarPerfil(db, perfilBase)
+    const c = crearCliente(db, clienteEs)
+    expect(() => crearIngreso(db, ingreso(c.id, { actividadId: 'zzz' }))).toThrow(/actividad/)
+  })
+  it('exige una sola principal', () => {
+    expect(() => guardarPerfil(db, { ...perfilBase, actividades: [{ ...perfilBase.actividades[0]!, principal: false }] })).toThrow(/principal/)
   })
 })

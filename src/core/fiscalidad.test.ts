@@ -19,7 +19,7 @@ describe('retencionProfesional', () => {
     expect(retencionProfesional({ ...perfilBase, actividadAnteriorAlAlta: true }, '2024-05-01')).toBe(15)
   })
   it('sin retención en actividades empresariales', () => {
-    const p = { ...perfilBase, epigrafe: { ...perfilBase.epigrafe, seccion: 1 as const } }
+    const p = { ...perfilBase, actividades: [{ ...perfilBase.actividades[0]!, seccion: 1 as const }] }
     expect(retencionProfesional(p, '2026-05-01')).toBe(0)
   })
 })
@@ -55,15 +55,25 @@ describe('sugerirFiscalidadIngreso', () => {
 describe('cálculo de cuotas', () => {
   it('ingreso nacional con IVA y retención', () => {
     expect(calcularIngreso({
-      fecha: '2026-01-01', clienteId: 1, concepto: 'x', base: 100000, tipoIva: 21,
+      fecha: '2026-01-01', clienteId: 1, actividadId: null, concepto: 'x', base: 100000, tipoIva: 21,
       retencionPct: 15, operacion: 'nacional', notas: ''
     })).toEqual({ cuotaIva: 21000, cuotaRetencion: 15000 })
   })
   it('gasto sin IVA ignora el tipo', () => {
     expect(calcularGasto({
-      fecha: '2026-01-01', proveedor: 'TGSS', nifProveedor: '', paisProveedor: 'ES', numeroFactura: '',
+      fecha: '2026-01-01', proveedor: 'TGSS', nifProveedor: '', paisProveedor: 'ES', numeroFactura: '', actividadId: null,
       concepto: 'cuota', categoria: 'cuota_autonomo', base: 30000, tipoIva: 21, deduciblePctIrpf: 100,
       deduciblePctIva: 0, retencionPct: 0, operacion: 'sin_iva', bienInversion: false, notas: ''
     }).cuotaIva).toBe(0)
+  })
+})
+
+describe('varias actividades', () => {
+  it('la retención depende de la sección de la actividad del ingreso', () => {
+    const empresarial = { id: 'a2', seccion: 1 as const, codigo: '845', descripcion: 'x', principal: false, deducibles: {} }
+    const p = { ...perfilBase, actividades: [...perfilBase.actividades, empresarial] }
+    expect(retencionProfesional(p, '2026-05-01', 'a1')).toBe(15)
+    expect(retencionProfesional(p, '2026-05-01', 'a2')).toBe(0)
+    expect(retencionProfesional(p, '2026-05-01', null)).toBe(15)
   })
 })

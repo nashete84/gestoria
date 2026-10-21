@@ -1,21 +1,20 @@
 import { useEffect, useState } from 'react'
-import { buscarEpigrafes, nombreSeccion } from '../../core/epigrafes'
 import { retencionProfesional } from '../../core/fiscalidad'
 import type { Perfil } from '../../core/tipos'
 import { api, llamar, mensajes } from '../api'
 import { Campo, Errores, hoy } from '../componentes'
+import { EditorActividades } from './Actividades'
 
 const VACIO: Perfil = {
   nif: '', nombre: '', domicilio: '', codigoPostal: '', municipio: 'Madrid', provincia: 'Madrid',
   email: '', telefono: '', iban: '',
-  epigrafe: { seccion: 2, codigo: '763', descripcion: 'Programadores y analistas de informática' },
+  actividades: [],
   fechaAlta: '', actividadAnteriorAlAlta: false, regimenIrpf: 'EDS', regimenIva: 'general',
   altaRoi: false, comunidad: 'MD'
 }
 
 export function PaginaPerfil({ onGuardado }: { onGuardado: (p: Perfil) => void }) {
   const [p, setP] = useState<Perfil>(VACIO)
-  const [busqueda, setBusqueda] = useState('')
   const [errores, setErrores] = useState<string[]>([])
   const [guardado, setGuardado] = useState(false)
 
@@ -39,7 +38,8 @@ export function PaginaPerfil({ onGuardado }: { onGuardado: (p: Perfil) => void }
     }
   }
 
-  const retencion = p.fechaAlta ? retencionProfesional(p, hoy()) : null
+  const profesional = p.actividades.find((a) => a.seccion === 2)
+  const retencion = p.fechaAlta && profesional ? retencionProfesional(p, hoy(), profesional.id) : null
 
   return (
     <section>
@@ -59,34 +59,12 @@ export function PaginaPerfil({ onGuardado }: { onGuardado: (p: Perfil) => void }
         <Campo etiqueta="IBAN (aparecerá en tus facturas)"><input value={p.iban} onChange={(e) => set('iban', e.target.value)} /></Campo>
       </div>
 
-      <h2>Actividad</h2>
+      <h2>Actividades (epígrafes del IAE)</h2>
+      <EditorActividades actividades={p.actividades} onChange={(a) => set('actividades', a)} />
+
+      <h2>Datos fiscales</h2>
       <div className="rejilla">
-        <Campo etiqueta="Buscar epígrafe IAE" ayuda="Catálogo reducido. Si el tuyo no aparece, escríbelo abajo.">
-          <input value={busqueda} placeholder="763, programador..." onChange={(e) => setBusqueda(e.target.value)} />
-        </Campo>
-        <div className="sugerencias">
-          {buscarEpigrafes(busqueda).map((e) => (
-            <button key={e.seccion + e.codigo} className={p.epigrafe.codigo === e.codigo && p.epigrafe.seccion === e.seccion ? 'chip activo' : 'chip'}
-              onClick={() => set('epigrafe', e)}>
-              {e.codigo} · {e.descripcion} ({nombreSeccion(e.seccion)})
-            </button>
-          ))}
-        </div>
-        <Campo etiqueta="Sección">
-          <select value={p.epigrafe.seccion}
-            onChange={(e) => set('epigrafe', { ...p.epigrafe, seccion: Number(e.target.value) as 1 | 2 | 3 })}>
-            <option value={1}>1 · Empresarial</option>
-            <option value={2}>2 · Profesional</option>
-            <option value={3}>3 · Artística</option>
-          </select>
-        </Campo>
-        <Campo etiqueta="Código del epígrafe">
-          <input value={p.epigrafe.codigo} onChange={(e) => set('epigrafe', { ...p.epigrafe, codigo: e.target.value })} />
-        </Campo>
-        <Campo etiqueta="Descripción">
-          <input value={p.epigrafe.descripcion} onChange={(e) => set('epigrafe', { ...p.epigrafe, descripcion: e.target.value })} />
-        </Campo>
-        <Campo etiqueta="Fecha de alta en la actividad">
+        <Campo etiqueta="Fecha de alta en la primera actividad">
           <input type="date" value={p.fechaAlta} onChange={(e) => set('fechaAlta', e.target.value)} />
         </Campo>
         <label className="check">
@@ -112,7 +90,7 @@ export function PaginaPerfil({ onGuardado }: { onGuardado: (p: Perfil) => void }
       </div>
       <p className="nota">
         Régimen: estimación directa simplificada · IVA régimen general · Comunidad de Madrid.
-        {retencion !== null && p.epigrafe.seccion === 2 ? ` Retención que aplican hoy tus clientes: ${retencion}%.` : ''}
+        {retencion ? ` Retención que aplican hoy tus clientes en actividades profesionales: ${retencion}%.` : ''}
       </p>
 
       <div className="acciones">

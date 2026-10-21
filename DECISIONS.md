@@ -93,3 +93,15 @@ Hay que validar el XML contra los XSD oficiales antes de activar el envío.
 Los gastos ya guardados no se recalculan. Descartado: una tabla completa por epígrafe del IAE, que no aporta para un único usuario.
 
 **Adjuntar la factura antes de guardar el gasto.** El diálogo de archivos lo abre el proceso principal y devuelve fichas aleatorias; al guardar, la interfaz pasa las fichas y el proceso principal copia solo esos archivos. La interfaz nunca envía rutas.
+
+## Actividades dinámicas (2026-10-21)
+
+**El perfil tiene una lista de actividades (epígrafes), una principal.** Cada actividad guarda su propia tabla de % deducibles por categoría de gasto, editable en *Mi perfil*. Ingresos y gastos se asignan a una actividad (por defecto, la principal): la retención sale de la sección de esa actividad y el % deducible de su tabla.
+
+**Ninguna regla fija por epígrafe en el código.** El catálogo (`src/core/epigrafes.ts`) es solo datos: propone los % iniciales al dar de alta una actividad (p. ej. 763 → equipos y software al 100%; 511, 721 y 722 → vehículo al 100%). Después manda lo que guarde el usuario. "Restablecer valores propuestos" vuelve a los del catálogo.
+
+**Suministros de casa como fórmula de la categoría**, no del epígrafe: el % de la actividad (30% IRPF, 100% IVA por defecto) se aplica sobre el % de vivienda afecta del perfil.
+
+**Migración sin pérdida.** Los perfiles guardados con un solo `epigrafe` se convierten al leerlos en una actividad principal con id `a1`; los ingresos y gastos existentes quedan en la principal (`actividad_id` nulo). No se puede quitar una actividad que tenga ingresos o gastos.
+
+**La fecha de alta sigue siendo una** (la de la primera actividad), porque decide la retención reducida del 7%. Descartado: fecha de alta por actividad, que no cambia ningún cálculo actual.

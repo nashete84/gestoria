@@ -4,7 +4,7 @@
 import { porcentaje } from './money'
 import { PAISES_UE } from './nif'
 import type {
-  Ambito, Cliente, Gasto, GastoNuevo, Ingreso, IngresoNuevo, OperacionIngreso, Perfil
+  Actividad, Ambito, Cliente, Gasto, GastoNuevo, Ingreso, IngresoNuevo, OperacionIngreso, Perfil
 } from './tipos'
 
 export const IVA_GENERAL = 21
@@ -21,8 +21,14 @@ export function ambitoDePais(pais: string): Ambito {
  * Profesionales (sección 2): 15%, o 7% el año de alta y los dos siguientes
  * si no se ejerció actividad profesional el año anterior al alta (art. 101.5 LIRPF).
  */
-export function retencionProfesional(perfil: Perfil, fechaFactura: string): number {
-  if (perfil.epigrafe.seccion !== 2) return 0
+export function actividadDe(perfil: Perfil, actividadId: string | null | undefined): Actividad {
+  return perfil.actividades.find((a) => a.id === actividadId)
+    ?? perfil.actividades.find((a) => a.principal)
+    ?? perfil.actividades[0]!
+}
+
+export function retencionProfesional(perfil: Perfil, fechaFactura: string, actividadId?: string | null): number {
+  if (actividadDe(perfil, actividadId).seccion !== 2) return 0
   const anioAlta = Number(perfil.fechaAlta.slice(0, 4))
   const anio = Number(fechaFactura.slice(0, 4))
   if (!perfil.actividadAnteriorAlAlta && anio >= anioAlta && anio <= anioAlta + 2) return 7
@@ -37,7 +43,7 @@ export interface SugerenciaIngreso {
 }
 
 export function sugerirFiscalidadIngreso(
-  perfil: Perfil, cliente: Cliente | null, fecha: string
+  perfil: Perfil, cliente: Cliente | null, fecha: string, actividadId: string | null = null
 ): SugerenciaIngreso {
   if (!cliente) {
     return { operacion: 'nacional', tipoIva: IVA_GENERAL, retencionPct: 0, avisos: [] }
@@ -46,7 +52,7 @@ export function sugerirFiscalidadIngreso(
   const avisos: string[] = []
 
   if (ambito === 'nacional') {
-    const retencionPct = cliente.tipo === 'empresa' ? retencionProfesional(perfil, fecha) : 0
+    const retencionPct = cliente.tipo === 'empresa' ? retencionProfesional(perfil, fecha, actividadId) : 0
     return { operacion: 'nacional', tipoIva: IVA_GENERAL, retencionPct, avisos }
   }
 
@@ -96,6 +102,8 @@ export interface CategoriaGasto {
   tipoIva: number
   retencionPct: number
   ayuda: string
+  /** Los % se aplican sobre la parte de la vivienda dedicada a la actividad (perfil.pctViviendaAfecta). */
+  sobreViviendaAfecta?: boolean
 }
 
 // Valores por defecto para estimación directa simplificada. El usuario los puede ajustar en cada gasto.
@@ -104,7 +112,7 @@ export const CATEGORIAS_GASTO: CategoriaGasto[] = [
   { id: 'software', nombre: 'Software y suscripciones', deduciblePctIrpf: 100, deduciblePctIva: 100, operacion: 'nacional', tipoIva: 21, retencionPct: 0, ayuda: 'Si el proveedor es de la UE o de fuera (p. ej. Irlanda, EE. UU.), cambia el tipo de operación.' },
   { id: 'equipos', nombre: 'Equipos informáticos', deduciblePctIrpf: 100, deduciblePctIva: 100, operacion: 'nacional', tipoIva: 21, retencionPct: 0, ayuda: 'Más de 300 € y uso de más de un año: márcalo como bien de inversión.' },
   { id: 'telefono_internet', nombre: 'Teléfono e internet', deduciblePctIrpf: 50, deduciblePctIva: 50, operacion: 'nacional', tipoIva: 21, retencionPct: 0, ayuda: 'Si es de uso mixto, deduce solo la parte afecta a la actividad.' },
-  { id: 'suministros_vivienda', nombre: 'Suministros de la vivienda (luz, agua, gas)', deduciblePctIrpf: 30, deduciblePctIva: 30, operacion: 'nacional', tipoIva: 21, retencionPct: 0, ayuda: 'IRPF: 30% sobre la proporción de vivienda afecta (art. 30.2.5ª LIRPF). Ajusta el % a tu caso.' },
+  { id: 'suministros_vivienda', nombre: 'Suministros de la vivienda (luz, agua, gas)', deduciblePctIrpf: 30, deduciblePctIva: 100, operacion: 'nacional', tipoIva: 21, retencionPct: 0, sobreViviendaAfecta: true, ayuda: 'IRPF: 30% de la parte de vivienda afecta (art. 30.2.5ª LIRPF); IVA: la parte afecta.' },
   { id: 'alquiler_local', nombre: 'Alquiler de local u oficina', deduciblePctIrpf: 100, deduciblePctIva: 100, operacion: 'nacional', tipoIva: 21, retencionPct: 19, ayuda: 'Practicas retención del 19% al arrendador: va al modelo 115.' },
   { id: 'coworking', nombre: 'Coworking', deduciblePctIrpf: 100, deduciblePctIva: 100, operacion: 'nacional', tipoIva: 21, retencionPct: 0, ayuda: 'Normalmente es un servicio, no un alquiler: sin retención.' },
   { id: 'profesionales', nombre: 'Servicios de profesionales (gestoría, abogado...)', deduciblePctIrpf: 100, deduciblePctIva: 100, operacion: 'nacional', tipoIva: 21, retencionPct: 15, ayuda: 'Si el profesional te factura con retención, va al modelo 111.' },

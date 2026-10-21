@@ -15,7 +15,7 @@ const OPERACIONES: Record<OperacionIngreso, string> = {
 }
 
 function nuevo(): IngresoNuevo {
-  return { fecha: hoy(), clienteId: null, concepto: '', base: 0, tipoIva: 21, retencionPct: 0, operacion: 'nacional', notas: '' }
+  return { fecha: hoy(), clienteId: null, actividadId: null, concepto: '', base: 0, tipoIva: 21, retencionPct: 0, operacion: 'nacional', notas: '' }
 }
 
 export function PaginaIngresos({ perfil }: { perfil: Perfil }) {
@@ -77,12 +77,13 @@ export function PaginaIngresos({ perfil }: { perfil: Perfil }) {
   const set = (cambios: Partial<IngresoNuevo>) =>
     editando && setEditando({ ...editando, datos: { ...editando.datos, ...cambios } })
 
-  const elegirCliente = (clienteId: number | null) => {
+  const sugerir = (clienteId: number | null, actividadId: string | null) => {
     const cliente = clientes.find((c) => c.id === clienteId) ?? null
-    const s = sugerirFiscalidadIngreso(perfil, cliente, d?.fecha ?? hoy())
-    set({ clienteId, operacion: s.operacion, tipoIva: s.tipoIva, retencionPct: s.retencionPct })
+    const s = sugerirFiscalidadIngreso(perfil, cliente, d?.fecha ?? hoy(), actividadId)
+    set({ clienteId, actividadId, operacion: s.operacion, tipoIva: s.tipoIva, retencionPct: s.retencionPct })
     setAvisos(s.avisos)
   }
+  const elegirCliente = (clienteId: number | null) => sugerir(clienteId, d?.actividadId ?? null)
 
   const guardar = async () => {
     if (!editando) return
@@ -125,6 +126,14 @@ export function PaginaIngresos({ perfil }: { perfil: Perfil }) {
         <div className="tarjeta" key={editando.id ?? "nuevo"}>
           <div className="rejilla">
             <Campo etiqueta="Fecha"><input type="date" value={d.fecha} onChange={(e) => set({ fecha: e.target.value })} /></Campo>
+            {perfil.actividades.length > 1 ? (
+              <Campo etiqueta="Actividad">
+                <select value={d.actividadId ?? ''} onChange={(e) => sugerir(d.clienteId, e.target.value || null)}>
+                  <option value="">Principal ({perfil.actividades.find((a) => a.principal)?.codigo})</option>
+                  {perfil.actividades.filter((a) => !a.principal).map((a) => <option key={a.id} value={a.id}>{a.codigo} · {a.descripcion}</option>)}
+                </select>
+              </Campo>
+            ) : null}
             <Campo etiqueta="Cliente">
               <select value={d.clienteId ?? ''} onChange={(e) => elegirCliente(e.target.value ? Number(e.target.value) : null)}>
                 <option value="">Sin cliente</option>

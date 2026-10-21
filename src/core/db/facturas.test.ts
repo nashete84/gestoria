@@ -16,7 +16,7 @@ beforeEach(() => {
 })
 
 const nuevoIngreso = (fecha = '2026-10-01') => crearIngreso(db, {
-  fecha, clienteId, concepto: 'Desarrollo', base: 100000, tipoIva: 21, retencionPct: 15, operacion: 'nacional', notas: ''
+  fecha, clienteId, actividadId: null, concepto: 'Desarrollo', base: 100000, tipoIva: 21, retencionPct: 15, operacion: 'nacional', notas: ''
 }).id
 
 describe('emitir', () => {
@@ -36,7 +36,7 @@ describe('emitir', () => {
   })
 
   it('exige cliente', () => {
-    const id = crearIngreso(db, { fecha: '2026-10-01', clienteId: null, concepto: 'x', base: 100, tipoIva: 21, retencionPct: 0, operacion: 'nacional', notas: '' }).id
+    const id = crearIngreso(db, { fecha: '2026-10-01', clienteId: null, actividadId: null, concepto: 'x', base: 100, tipoIva: 21, retencionPct: 0, operacion: 'nacional', notas: '' }).id
     expect(() => emitirFactura(db, id, '2026-10-21')).toThrow(/cliente/)
   })
 })
@@ -82,7 +82,7 @@ describe('salidas', () => {
 describe('clientes extranjeros y vista previa', () => {
   it('factura a un cliente de fuera de la UE sin identificador fiscal', () => {
     const us = crearCliente(db, { tipo: 'particular', nombre: 'John Smith', nif: '', pais: 'US', domicilio: '', codigoPostal: '', municipio: '', provincia: '', email: '', notas: '' })
-    const ingresoId = crearIngreso(db, { fecha: '2026-10-01', clienteId: us.id, concepto: 'App', base: 50000, tipoIva: 0, retencionPct: 0, operacion: 'no_sujeta', notas: '' }).id
+    const ingresoId = crearIngreso(db, { fecha: '2026-10-01', clienteId: us.id, actividadId: null, concepto: 'App', base: 50000, tipoIva: 0, retencionPct: 0, operacion: 'no_sujeta', notas: '' }).id
     const f = emitirFactura(db, ingresoId, '2026-10-21')
     const xml = xmlEnvio(db, f.id)
     expect(xml).not.toContain('Destinatarios')
@@ -91,7 +91,7 @@ describe('clientes extranjeros y vista previa', () => {
 
   it('un cliente español sin NIF no se puede facturar', () => {
     const es = crearCliente(db, { tipo: 'particular', nombre: 'Ana', nif: '', pais: 'ES', domicilio: '', codigoPostal: '', municipio: '', provincia: '', email: '', notas: '' })
-    const ingresoId = crearIngreso(db, { fecha: '2026-10-01', clienteId: es.id, concepto: 'x', base: 100, tipoIva: 21, retencionPct: 0, operacion: 'nacional', notas: '' }).id
+    const ingresoId = crearIngreso(db, { fecha: '2026-10-01', clienteId: es.id, actividadId: null, concepto: 'x', base: 100, tipoIva: 21, retencionPct: 0, operacion: 'nacional', notas: '' }).id
     expect(() => emitirFactura(db, ingresoId, '2026-10-21')).toThrow(/NIF/)
   })
 

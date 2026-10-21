@@ -134,6 +134,10 @@ const MIGRACIONES: string[] = [
   BEGIN SELECT RAISE(ABORT, 'Los registros de facturación no se pueden modificar'); END;
   CREATE TRIGGER registros_sin_borrado BEFORE DELETE ON registros_verifactu
   BEGIN SELECT RAISE(ABORT, 'Los registros de facturación no se pueden borrar'); END;
+  `,
+  `
+  ALTER TABLE ingresos ADD COLUMN actividad_id TEXT;
+  ALTER TABLE gastos ADD COLUMN actividad_id TEXT;
   `
 ]
 

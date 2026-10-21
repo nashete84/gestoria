@@ -5,6 +5,7 @@ import {
 } from '../calendario'
 import { calcularGasto, calcularIngreso } from '../fiscalidad'
 import { porcentaje } from '../money'
+import { normalizarPerfil } from '../epigrafes'
 import { normalizarNif } from '../nif'
 export { periodoTrimestre } from '../periodos'
 import type {
@@ -30,12 +31,20 @@ function comprobar(errores: string[]): void {
 
 export function leerPerfil(db: Db): Perfil | null {
   const fila = db.prepare('SELECT datos FROM perfil WHERE id = 1').get() as { datos: string } | undefined
-  return fila ? (JSON.parse(fila.datos) as Perfil) : null
+  return fila ? normalizarPerfil(JSON.parse(fila.datos)) : null
 }
 
 export function guardarPerfil(db: Db, p: Perfil): Perfil {
   const perfil = { ...p, nif: normalizarNif(p.nif) }
   comprobar(validarPerfil(perfil))
+  // No se puede quitar una actividad que ya tiene ingresos o gastos.
+  const anterior = leerPerfil(db)
+  for (const a of anterior?.actividades ?? []) {
+    if (perfil.actividades.some((x) => x.id === a.id)) continue
+    const usos = (db.prepare('SELECT (SELECT COUNT(*) FROM ingresos WHERE actividad_id = ?) + (SELECT COUNT(*) FROM gastos WHERE actividad_id = ?) n')
+      .get(a.id, a.id) as { n: number }).n
+    if (usos > 0) throw new ErrorValidacion([`No se puede quitar la actividad ${a.codigo}: tiene ${usos} ingreso(s) o gasto(s).`])
+  }
   db.prepare(
     'INSERT INTO perfil (id, datos) VALUES (1, ?) ON CONFLICT(id) DO UPDATE SET datos = excluded.datos'
   ).run(JSON.stringify(perfil))
@@ -97,7 +106,7 @@ export function borrarCliente(db: Db, id: number): void {
 function aIngreso(f: Fila): Ingreso {
   return {
     id: f.id as number, fecha: f.fecha as string, clienteId: (f.cliente_id as number | null) ?? null,
-    concepto: f.concepto as string, base: f.base as number, tipoIva: f.tipo_iva as number,
+    actividadId: (f.actividad_id as string | null) ?? null, concepto: f.concepto as string, base: f.base as number, tipoIva: f.tipo_iva as number,
     cuotaIva: f.cuota_iva as number, retencionPct: f.retencion_pct as number,
     cuotaRetencion: f.cuota_retencion as number, operacion: f.operacion as Ingreso['operacion'],
     facturaId: (f.factura_id as number | null) ?? null, notas: f.notas as string
@@ -109,16 +118,24 @@ export function listarIngresos(db: Db, desde: string, hasta: string): Ingreso[] 
     .all(desde, hasta) as Fila[]).map(aIngreso)
 }
 
-function filaIngreso(n: IngresoNuevo) {
+function comprobarActividad(db: Db, actividadId: string | null) {
+  if (actividadId === null) return
+  const perfil = leerPerfil(db)
+  if (!perfil?.actividades.some((a) => a.id === actividadId)) throw new ErrorValidacion(['La actividad elegida no existe.'])
+}
+
+function filaIngreso(db: Db, entrada: IngresoNuevo) {
+  const n = { ...entrada, actividadId: entrada.actividadId ?? null }
   comprobar(validarIngreso(n))
+  comprobarActividad(db, n.actividadId)
   return { ...n, ...calcularIngreso(n) }
 }
 
 export function crearIngreso(db: Db, n: IngresoNuevo): Ingreso {
-  const f = filaIngreso(n)
+  const f = filaIngreso(db, n)
   const r = db.prepare(`INSERT INTO ingresos
-    (fecha, cliente_id, concepto, base, tipo_iva, cuota_iva, retencion_pct, cuota_retencion, operacion, notas)
-    VALUES (@fecha, @clienteId, @concepto, @base, @tipoIva, @cuotaIva, @retencionPct, @cuotaRetencion, @operacion, @notas)`
+    (fecha, cliente_id, actividad_id, concepto, base, tipo_iva, cuota_iva, retencion_pct, cuota_retencion, operacion, notas)
+    VALUES (@fecha, @clienteId, @actividadId, @concepto, @base, @tipoIva, @cuotaIva, @retencionPct, @cuotaRetencion, @operacion, @notas)`
   ).run(f)
   return { ...f, id: Number(r.lastInsertRowid), facturaId: null }
 }
@@ -127,8 +144,8 @@ export function actualizarIngreso(db: Db, id: number, n: IngresoNuevo): Ingreso 
   const actual = db.prepare('SELECT factura_id FROM ingresos WHERE id = ?').get(id) as { factura_id: number | null } | undefined
   if (!actual) throw new ErrorValidacion(['El ingreso no existe.'])
   if (actual.factura_id) throw new ErrorValidacion(['Este ingreso viene de una factura: corrígelo con una factura rectificativa.'])
-  const f = filaIngreso(n)
-  db.prepare(`UPDATE ingresos SET fecha=@fecha, cliente_id=@clienteId, concepto=@concepto, base=@base,
+  const f = filaIngreso(db, n)
+  db.prepare(`UPDATE ingresos SET fecha=@fecha, cliente_id=@clienteId, actividad_id=@actividadId, concepto=@concepto, base=@base,
     tipo_iva=@tipoIva, cuota_iva=@cuotaIva, retencion_pct=@retencionPct, cuota_retencion=@cuotaRetencion,
     operacion=@operacion, notas=@notas WHERE id=@id`).run({ ...f, id })
   return { ...f, id, facturaId: null }
@@ -149,7 +166,8 @@ function aGasto(f: Fila): Gasto {
   return {
     id: f.id as number, fecha: f.fecha as string, proveedor: f.proveedor as string,
     nifProveedor: f.nif_proveedor as string, paisProveedor: f.pais_proveedor as string,
-    numeroFactura: f.numero_factura as string, concepto: f.concepto as string,
+    numeroFactura: f.numero_factura as string, actividadId: (f.actividad_id as string | null) ?? null,
+    concepto: f.concepto as string,
     categoria: f.categoria as string, base: f.base as number, tipoIva: f.tipo_iva as number,
     cuotaIva: f.cuota_iva as number, deduciblePctIrpf: f.deducible_pct_irpf as number,
     deduciblePctIva: f.deducible_pct_iva as number, retencionPct: f.retencion_pct as number,
@@ -158,14 +176,15 @@ function aGasto(f: Fila): Gasto {
   }
 }
 
-function filaGasto(n: GastoNuevo) {
-  const g = { ...n, nifProveedor: normalizarNif(n.nifProveedor), paisProveedor: n.paisProveedor.trim().toUpperCase() }
+function filaGasto(db: Db, n: GastoNuevo) {
+  const g = { ...n, actividadId: n.actividadId ?? null, nifProveedor: normalizarNif(n.nifProveedor), paisProveedor: n.paisProveedor.trim().toUpperCase() }
   comprobar(validarGasto(g))
+  comprobarActividad(db, g.actividadId)
   return { ...g, ...calcularGasto(g) }
 }
 
 const COLUMNAS_GASTO = `fecha=@fecha, proveedor=@proveedor, nif_proveedor=@nifProveedor,
-  pais_proveedor=@paisProveedor, numero_factura=@numeroFactura, concepto=@concepto, categoria=@categoria,
+  pais_proveedor=@paisProveedor, numero_factura=@numeroFactura, actividad_id=@actividadId, concepto=@concepto, categoria=@categoria,
   base=@base, tipo_iva=@tipoIva, cuota_iva=@cuotaIva, deducible_pct_irpf=@deduciblePctIrpf,
   deducible_pct_iva=@deduciblePctIva, retencion_pct=@retencionPct, cuota_retencion=@cuotaRetencion,
   operacion=@operacion, bien_inversion=@bienInversionN, notas=@notas`
@@ -176,18 +195,18 @@ export function listarGastos(db: Db, desde: string, hasta: string): Gasto[] {
 }
 
 export function crearGasto(db: Db, n: GastoNuevo): Gasto {
-  const f = filaGasto(n)
-  const r = db.prepare(`INSERT INTO gastos (fecha, proveedor, nif_proveedor, pais_proveedor, numero_factura,
+  const f = filaGasto(db, n)
+  const r = db.prepare(`INSERT INTO gastos (fecha, proveedor, nif_proveedor, pais_proveedor, numero_factura, actividad_id,
     concepto, categoria, base, tipo_iva, cuota_iva, deducible_pct_irpf, deducible_pct_iva, retencion_pct,
     cuota_retencion, operacion, bien_inversion, notas) VALUES (@fecha, @proveedor, @nifProveedor,
-    @paisProveedor, @numeroFactura, @concepto, @categoria, @base, @tipoIva, @cuotaIva, @deduciblePctIrpf,
+    @paisProveedor, @numeroFactura, @actividadId, @concepto, @categoria, @base, @tipoIva, @cuotaIva, @deduciblePctIrpf,
     @deduciblePctIva, @retencionPct, @cuotaRetencion, @operacion, @bienInversionN, @notas)`
   ).run({ ...f, bienInversionN: f.bienInversion ? 1 : 0 })
   return { ...f, id: Number(r.lastInsertRowid) }
 }
 
 export function actualizarGasto(db: Db, id: number, n: GastoNuevo): Gasto {
-  const f = filaGasto(n)
+  const f = filaGasto(db, n)
   const r = db.prepare(`UPDATE gastos SET ${COLUMNAS_GASTO} WHERE id=@id`)
     .run({ ...f, bienInversionN: f.bienInversion ? 1 : 0, id })
   if (r.changes === 0) throw new ErrorValidacion(['El gasto no existe.'])

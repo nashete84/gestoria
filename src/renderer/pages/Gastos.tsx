@@ -16,10 +16,11 @@ const OPERACIONES: Record<OperacionGasto, string> = {
 
 function deCategoria(perfil: Perfil, id: string, base: Partial<GastoNuevo> = {}): GastoNuevo {
   const c = CATEGORIAS_GASTO.find((x) => x.id === id) ?? CATEGORIAS_GASTO[CATEGORIAS_GASTO.length - 1]!
-  const ded = deduciblesPara(perfil, c.id)
+  const actividadId = base.actividadId ?? null
+  const ded = deduciblesPara(perfil, actividadId, c.id)
   return {
     fecha: hoy(), proveedor: '', nifProveedor: '', paisProveedor: 'ES', numeroFactura: '', concepto: '',
-    base: 0, bienInversion: false, notas: '', ...base,
+    base: 0, bienInversion: false, notas: '', ...base, actividadId,
     categoria: c.id, operacion: c.operacion, tipoIva: c.tipoIva, deduciblePctIrpf: ded.irpf,
     deduciblePctIva: ded.iva, retencionPct: c.retencionPct
   }
@@ -70,7 +71,7 @@ export function PaginaGastos({ perfil }: { perfil: Perfil }) {
     }
   }
 
-  const deducible = deduciblesPara(perfil, d?.categoria ?? 'otros')
+  const deducible = deduciblesPara(perfil, d?.actividadId ?? null, d?.categoria ?? 'otros')
   const cuotas = d ? calcularGasto(d) : null
   const nombreCategoria = (id: string) => CATEGORIAS_GASTO.find((c) => c.id === id)?.nombre ?? id
   const total = (k: 'base' | 'cuotaIva') => gastos.reduce((a, g) => a + g[k], 0)
@@ -87,6 +88,14 @@ export function PaginaGastos({ perfil }: { perfil: Perfil }) {
       {d ? (
         <div className="tarjeta" key={editando.id ?? 'nuevo'}>
           <div className="rejilla">
+            {perfil.actividades.length > 1 ? (
+              <Campo etiqueta="Actividad">
+                <select value={d.actividadId ?? ''} onChange={(e) => set(deCategoria(perfil, d.categoria, { ...d, actividadId: e.target.value || null }))}>
+                  <option value="">Principal ({perfil.actividades.find((a) => a.principal)?.codigo})</option>
+                  {perfil.actividades.filter((a) => !a.principal).map((a) => <option key={a.id} value={a.id}>{a.codigo} · {a.descripcion}</option>)}
+                </select>
+              </Campo>
+            ) : null}
             <Campo etiqueta="Categoría">
               <select value={d.categoria} onChange={(e) => set(deCategoria(perfil, e.target.value, d))}>
                 {CATEGORIAS_GASTO.map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
