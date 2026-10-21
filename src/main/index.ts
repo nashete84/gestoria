@@ -5,6 +5,7 @@ import { randomUUID } from 'node:crypto'
 import { basename, join, resolve, sep } from 'node:path'
 import type { ApiGestoria, Resultado } from '../core/api'
 import * as facturas from '../core/db/facturas'
+import * as modelos from '../core/db/modelos'
 import * as renta from '../core/db/renta'
 import * as repos from '../core/db/repos'
 import { htmlFactura } from '../core/plantillaFactura'
@@ -168,6 +169,9 @@ const handlers: Handlers = {
   },
   estimacionRenta: (ej) => renta.vistaRenta(db, id(ej)),
   guardarDatosRenta: (ej, d) => renta.guardarDatosRenta(db, id(ej), d),
+  calcularModelo: (m, ej, p) => modelos.calcularModelo(db, m, id(ej), p),
+  leerAjustesModelos: (ej) => modelos.leerAjustesModelos(db, id(ej)),
+  guardarAjustesModelos: (ej, a) => modelos.guardarAjustesModelos(db, id(ej), a),
   abrirCarpetaDatos: async () => {
     await shell.openPath(carpetaDatos())
   }

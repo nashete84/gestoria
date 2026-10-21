@@ -43,6 +43,13 @@ export interface ParametrosRenta {
   reduccionRentasBajas: { importe: number; umbral: number; limiteRentas: number; coeficiente: number }
   /** Planes de pensiones: límite general, adicional por plan de empleo de autónomos y % máximo sobre rendimientos. */
   pensiones: { limite: number; limiteAutonomos: number; pctRendimientos: number }
+  /**
+   * Minoración del pago fraccionado (casilla 13 del 130, art. 110.3.c RIRPF): importe por trimestre
+   * según el rendimiento neto de actividades del año anterior. Tramos ordenados; por encima del último, nada.
+   */
+  minoracion130: { hasta: number; importe: number }[]
+  /** % del pago fraccionado del 130 sobre el rendimiento neto acumulado. */
+  pct130: number
   /** Coeficiente máximo de amortización anual (%) por categoría de gasto, tabla simplificada. */
   amortizacion: Record<string, number>
   /** Coeficiente para categorías sin entrada propia ("otros elementos"). */
@@ -111,6 +118,11 @@ const BASE_2024: Omit<ParametrosRenta, 'ejercicio' | 'avisos'> = {
   // Tabla simplificada (Orden de 27-3-1998): equipos y programas informáticos 26%, transporte 16%,
   // mobiliario 10%, útiles y herramientas 30%, resto 10%.
   amortizacion: { equipos: 26, software: 26, vehiculo: 16 },
+  minoracion130: [
+    { hasta: e(9000), importe: e(100) }, { hasta: e(10000), importe: e(75) },
+    { hasta: e(11000), importe: e(50) }, { hasta: e(12000), importe: e(25) }
+  ],
+  pct130: 20,
   amortizacionDefecto: 10
 }
 

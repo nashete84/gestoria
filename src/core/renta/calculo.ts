@@ -169,25 +169,30 @@ function diasDelAnio(anio: number) {
   return (anio % 4 === 0 && anio % 100 !== 0) || anio % 400 === 0 ? 366 : 365
 }
 
-/** Fracción del año desde la fecha de compra (incluida) hasta el 31 de diciembre. */
-function fraccionPrimerAnio(fecha: string): number {
-  const anio = Number(fecha.slice(0, 4))
-  const inicio = Date.UTC(anio, Number(fecha.slice(5, 7)) - 1, Number(fecha.slice(8, 10)))
-  const fin = Date.UTC(anio, 11, 31)
-  return (Math.round((fin - inicio) / 86400000) + 1) / diasDelAnio(anio)
+const dia = (f: string) => Date.UTC(Number(f.slice(0, 4)), Number(f.slice(5, 7)) - 1, Number(f.slice(8, 10)))
+
+/** Fracción del año `anio` entre `desde` (o el 1 de enero) y `hasta` (o el 31 de diciembre), ambos incluidos. */
+function fraccionAnio(anio: number, desde: string, hasta: string): number {
+  const inicio = Math.max(dia(desde), Date.UTC(anio, 0, 1))
+  const fin = Math.min(dia(hasta), Date.UTC(anio, 11, 31))
+  return fin < inicio ? 0 : (Math.round((fin - inicio) / 86400000) + 1) / diasDelAnio(anio)
 }
 
-/** Amortización lineal al coeficiente máximo de la tabla simplificada, prorrateada el primer año. */
-export function amortizar(g: Gasto, ejercicio: number, p: ParametrosRenta, actividadId: string): Amortizacion | null {
+/**
+ * Amortización lineal al coeficiente máximo de la tabla simplificada, prorrateada por días.
+ * `hasta` permite calcular solo una parte del ejercicio (pagos fraccionados del 130).
+ */
+export function amortizar(g: Gasto, ejercicio: number, p: ParametrosRenta, actividadId: string, hasta = `${ejercicio}-12-31`): Amortizacion | null {
   const anioCompra = Number(g.fecha.slice(0, 4))
-  if (!g.bienInversion || anioCompra > ejercicio) return null
+  if (!g.bienInversion || anioCompra > ejercicio || g.fecha > hasta) return null
   const valor = porcentaje(g.base, g.deduciblePctIrpf)
   const coeficiente = p.amortizacion[g.categoria] ?? p.amortizacionDefecto
   const anual = (valor * coeficiente) / 100
   let acumulada = 0
   let delEjercicio = 0
   for (let anio = anioCompra; anio <= ejercicio; anio++) {
-    const cuota = Math.min(valor - acumulada, redondear(anio === anioCompra ? anual * fraccionPrimerAnio(g.fecha) : anual))
+    const fin = anio === ejercicio ? hasta : `${anio}-12-31`
+    const cuota = Math.min(valor - acumulada, redondear(anual * fraccionAnio(anio, g.fecha, fin)))
     if (anio === ejercicio) delEjercicio = cuota
     else acumulada += cuota
   }
@@ -198,17 +203,27 @@ export function amortizar(g: Gasto, ejercicio: number, p: ParametrosRenta, activ
   }
 }
 
-export function calcularRenta(e: EntradaRenta, parametros: ParametrosRenta = parametrosDe(e.ejercicio)): EstimacionRenta {
-  const { ejercicio, perfil, datos: d } = e
-  const p = parametros
-  const avisos = [...p.avisos]
-  const anio = String(ejercicio)
-  const idDe = (actividadId: string | null) => actividadDe(perfil, actividadId).id
+export interface EntradaRendimiento {
+  perfil: Perfil
+  ejercicio: number
+  /** Último día incluido (31 de diciembre para la renta, fin del trimestre para el 130). */
+  hasta: string
+  ingresos: Ingreso[]
+  gastos: Gasto[]
+  /** Sin el 5% de difícil justificación (autónomo dependiente). */
+  sinDificilJustificacion: boolean
+}
 
-  const ingresos = e.ingresos.filter((i) => i.fecha.startsWith(anio))
-  const corrientes = e.gastos.filter((g) => g.fecha.startsWith(anio) && !g.bienInversion)
+/** Rendimiento neto de cada actividad del 1 de enero a `hasta`, con amortizaciones y el 5% de difícil justificación. */
+export function calcularRendimientos(e: EntradaRendimiento, p: ParametrosRenta): { actividades: RendimientoActividad[]; amortizaciones: Amortizacion[] } {
+  const { perfil, ejercicio, hasta } = e
+  const desde = `${ejercicio}-01-01`
+  const idDe = (actividadId: string | null) => actividadDe(perfil, actividadId).id
+  const enPeriodo = (f: string) => f >= desde && f <= hasta
+  const ingresos = e.ingresos.filter((i) => enPeriodo(i.fecha))
+  const corrientes = e.gastos.filter((g) => enPeriodo(g.fecha) && !g.bienInversion)
   const amortizaciones = e.gastos
-    .map((g) => amortizar(g, ejercicio, p, idDe(g.actividadId)))
+    .map((g) => amortizar(g, ejercicio, p, idDe(g.actividadId), hasta))
     .filter((a): a is Amortizacion => a !== null)
 
   // Rendimiento por actividad (en el modelo 100 cada actividad va por separado).
@@ -217,7 +232,7 @@ export function calcularRenta(e: EntradaRenta, parametros: ParametrosRenta = par
     const gas = suma(corrientes.filter((g) => idDe(g.actividadId) === a.id).map((g) => porcentaje(g.base, g.deduciblePctIrpf)))
     const amo = suma(amortizaciones.filter((x) => x.actividadId === a.id).map((x) => x.delEjercicio))
     const previo = ing - gas - amo
-    const dificil = d.autonomoDependiente || previo <= 0 ? 0 : porcentaje(previo, p.dificilJustificacion.pct)
+    const dificil = e.sinDificilJustificacion || previo <= 0 ? 0 : porcentaje(previo, p.dificilJustificacion.pct)
     return {
       actividadId: a.id, codigo: a.codigo, descripcion: a.descripcion,
       ingresos: ing, gastos: gas, amortizaciones: amo, rendimientoPrevio: previo,
@@ -235,6 +250,18 @@ export function calcularRenta(e: EntradaRenta, parametros: ParametrosRenta = par
       a.rendimientoNeto = a.rendimientoPrevio - parte
     })
   }
+  return { actividades, amortizaciones }
+}
+
+export function calcularRenta(e: EntradaRenta, parametros: ParametrosRenta = parametrosDe(e.ejercicio)): EstimacionRenta {
+  const { ejercicio, perfil, datos: d } = e
+  const p = parametros
+  const avisos = [...p.avisos]
+  const anio = String(ejercicio)
+  const ingresos = e.ingresos.filter((i) => i.fecha.startsWith(anio))
+  const { actividades, amortizaciones } = calcularRendimientos({
+    perfil, ejercicio, hasta: `${ejercicio}-12-31`, ingresos: e.ingresos, gastos: e.gastos, sinDificilJustificacion: d.autonomoDependiente
+  }, p)
   if (d.autonomoDependiente) avisos.push('Con la reducción de autónomo dependiente no se aplica el 5% de gastos de difícil justificación.')
 
   const rendimientoActividades = suma(actividades.map((a) => a.rendimientoNeto))

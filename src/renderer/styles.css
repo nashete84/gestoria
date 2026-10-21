@@ -97,3 +97,6 @@ table.desglose { max-width: 640px; }
 table.desglose tr.subtotal td { font-weight: 600; background: var(--fondo); }
 table.desglose tr.info td { color: var(--suave); font-size: 12px; }
 .acciones.hijo { flex-wrap: wrap; align-items: flex-end; }
+.obligacion .botones { display: flex; gap: 6px; }
+.casillas table.desglose { margin-top: 8px; }
+.casillas .etiqueta { margin-left: 0; margin-right: 6px; font-variant-numeric: tabular-nums; }

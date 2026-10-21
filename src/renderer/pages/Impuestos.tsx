@@ -4,6 +4,7 @@ import {
 } from '../../core/calendario'
 import { api, llamar, mensajes } from '../api'
 import { Campo, CampoEuros, Errores, euros, hoy } from '../componentes'
+import { AjustesEjercicio, CasillasModelo, MODELOS_CALCULADOS } from './CasillasModelo'
 
 const RESULTADOS: Record<Resultado, string> = {
   ingresar: 'A ingresar',
@@ -30,6 +31,8 @@ export function PaginaImpuestos({ onCambio }: { onCambio: () => void }) {
   const [lista, setLista] = useState<ObligacionConEstado[]>([])
   const [marcando, setMarcando] = useState<PresentacionNueva | null>(null)
   const [errores, setErrores] = useState<string[]>([])
+  const [viendo, setViendo] = useState<string | null>(null)
+  const [version, setVersion] = useState(0)
 
   const cargar = () => llamar(api.calendarioFiscal(hoy())).then(setLista).catch((e) => setErrores(mensajes(e)))
   useEffect(() => { void cargar() }, [])
@@ -58,6 +61,24 @@ export function PaginaImpuestos({ onCambio }: { onCambio: () => void }) {
     }
   }
 
+  /** Abre el formulario de presentado con el resultado calculado, si lo hay. */
+  const abrirMarcar = async (o: ObligacionConEstado, abierto: boolean) => {
+    if (abierto) { setMarcando(null); return }
+    const nuevo: PresentacionNueva = {
+      modelo: o.modelo, ejercicio: o.ejercicio, periodo: o.periodo, fechaPresentacion: hoy(),
+      resultado: 'ingresar', importe: 0, justificante: '', notas: ''
+    }
+    if (MODELOS_CALCULADOS.includes(o.modelo)) {
+      const r = await api.calcularModelo(o.modelo, o.ejercicio, o.periodo)
+      if (r.ok) {
+        const tipo = r.datos.sinActividad && o.modelo === '303' ? 'cero' : r.datos.tipo
+        nuevo.resultado = tipo
+        nuevo.importe = tipo === 'cero' || tipo === 'negativa' ? 0 : Math.abs(r.datos.resultado)
+      }
+    }
+    setMarcando(nuevo)
+  }
+
   const pendientes = lista.filter((o) => o.estado === 'vencido' || o.estado === 'en_plazo')
   const proximos = lista.filter((o) => o.estado === 'proximo')
   const presentados = lista
@@ -76,12 +97,15 @@ export function PaginaImpuestos({ onCambio }: { onCambio: () => void }) {
           <div className="nota">{o.nota ?? ''}</div>
         </div>
         <div className={`plazo ${o.estado}`}>{cuandoVence(o)}</div>
-        {o.estado !== 'proximo' ? (
-          <button className="secundario" onClick={() => setMarcando(abierto ? null : {
-            modelo: o.modelo, ejercicio: o.ejercicio, periodo: o.periodo, fechaPresentacion: hoy(),
-            resultado: 'ingresar', importe: 0, justificante: '', notas: ''
-          })}>Marcar como presentado</button>
-        ) : <span />}
+        <div className="botones">
+          {MODELOS_CALCULADOS.includes(o.modelo) ? (
+            <button className="secundario" onClick={() => setViendo(viendo === k ? null : k)}>{viendo === k ? 'Ocultar casillas' : 'Ver casillas'}</button>
+          ) : null}
+          {o.estado !== 'proximo' ? (
+            <button className="secundario" onClick={() => abrirMarcar(o, !!abierto)}>Marcar como presentado</button>
+          ) : null}
+        </div>
+        {viendo === k ? <div className="marcar"><CasillasModelo key={version} modelo={o.modelo} ejercicio={o.ejercicio} periodo={o.periodo} /></div> : null}
         {abierto ? (
           <div className="marcar">
             <div className="rejilla">
@@ -148,6 +172,9 @@ export function PaginaImpuestos({ onCambio }: { onCambio: () => void }) {
           {!presentados.length ? <tr><td colSpan={7} className="vacio">Aún no has marcado ningún modelo como presentado.</td></tr> : null}
         </tbody>
       </table>
+      <h2>Ajustes para calcular los modelos</h2>
+      <AjustesEjercicio onCambio={() => setVersion((v) => v + 1)} />
+
       <p className="nota">
         Plazos generales de la AEAT; si el último día cae en fin de semana pasa al lunes. Los festivos no se tienen en cuenta.
         Los modelos 111, 115, 349 y 347 aparecen solo si tus ingresos y gastos los hacen necesarios.

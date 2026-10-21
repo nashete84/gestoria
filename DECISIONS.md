@@ -124,3 +124,16 @@ Los gastos ya guardados no se recalculan. Descartado: una tabla completa por ep�
 **Pendiente de verificar:** mínimos personales y familiares de Madrid (puestos un 10% por encima de los estatales).
 
 **Discapacidad y dependencia (2026-10-21).** Para ti y para cada hijo: grado (no / 33-64% / 65% o más) y "dependencia" (ayuda de terceros o movilidad reducida). Mínimo de 3.000 € o 9.000 €, más 3.000 € de asistencia si el grado es del 65% o hay dependencia (art. 60 LIRPF). Los hijos con discapacidad cuentan a cualquier edad. Los importes de Madrid (un 10% más) están pendientes de verificar. Fuera de alcance: ascendientes.
+
+## Cálculo de los modelos (2026-10-21)
+
+**Primero las casillas y después el fichero.** El cálculo (`src/core/modelos/`) no depende del formato del .txt: se puede revisar en pantalla ("Ver casillas" en Impuestos) y prellena el importe al marcar como presentado. El .txt se generará con los diseños de registro oficiales cuando estén disponibles. Descartado: escribir las posiciones de memoria o de fuentes no oficiales.
+
+- **303**: devengado por tipo (4, 10, 21 y 0%), inversión del sujeto pasivo (10-13) también como deducible (36-39 o 28-31), bienes de inversión en 30-31/38-39, % de IVA deducible del gasto, informativas 59 (UE) y 120 (no sujetas, p. ej. UK). Las cuotas a compensar se arrastran desde el 1T (ajuste manual del saldo inicial). 4T negativo: devolución o compensar según el ajuste.
+- **130**: acumulado desde enero con amortizaciones prorrateadas hasta fin de trimestre y 5% de difícil justificación; 05 = suma de 07 positivos anteriores; minoración de la casilla 13 según el rendimiento del año anterior (manual, calculado con la app, o 0 si el alta es de este año); negativos de trimestres anteriores en 15. Tramos de la minoración como datos en los parámetros por año.
+- **111/115**: retenciones practicadas en gastos (115 = categoría alquiler de local).
+- **349**: por operador y clave; ingresos intracomunitarios S, gastos I (A si son equipos).
+- **347**: terceros nacionales sin retención por encima de 3.005,06 € con IVA, por trimestres. Fuera: cuota de autónomos (Seguridad Social). También se quitó del aviso del calendario.
+- **390**: pendiente de su diseño de registro (numeración de casillas distinta del 303).
+
+**Ajustes manuales por ejercicio** (tabla `modelos_ajustes`, migración 6): saldo a compensar del 303 al empezar el año, devolución o compensación del 4T y rendimiento del año anterior.

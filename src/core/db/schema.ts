@@ -144,6 +144,12 @@ const MIGRACIONES: string[] = [
     ejercicio INTEGER PRIMARY KEY,
     datos TEXT NOT NULL
   );
+  `,
+  `
+  CREATE TABLE modelos_ajustes (
+    ejercicio INTEGER PRIMARY KEY,
+    datos TEXT NOT NULL
+  );
   `
 ]
 
