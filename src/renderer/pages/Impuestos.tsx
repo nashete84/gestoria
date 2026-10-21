@@ -33,6 +33,8 @@ export function PaginaImpuestos({ onCambio }: { onCambio: () => void }) {
   const [errores, setErrores] = useState<string[]>([])
   const [viendo, setViendo] = useState<string | null>(null)
   const [version, setVersion] = useState(0)
+  const anioActual = Number(hoy().slice(0, 4))
+  const [ejercicio, setEjercicio] = useState(anioActual)
 
   const cargar = () => llamar(api.calendarioFiscal(hoy())).then(setLista).catch((e) => setErrores(mensajes(e)))
   useEffect(() => { void cargar() }, [])
@@ -79,9 +81,13 @@ export function PaginaImpuestos({ onCambio }: { onCambio: () => void }) {
     setMarcando(nuevo)
   }
 
-  const pendientes = lista.filter((o) => o.estado === 'vencido' || o.estado === 'en_plazo')
-  const proximos = lista.filter((o) => o.estado === 'proximo')
-  const presentados = lista
+  // Solo los modelos del ejercicio elegido (por defecto, el año en curso).
+  const ejercicios = [...new Set([anioActual, ...lista.map((o) => o.ejercicio)])].sort((a, b) => b - a)
+  const otrosPendientes = lista.filter((o) => o.ejercicio !== ejercicio && !o.condicional && o.estado === 'vencido').length
+  const delEjercicio = lista.filter((o) => o.ejercicio === ejercicio)
+  const pendientes = delEjercicio.filter((o) => o.estado === 'vencido' || o.estado === 'en_plazo')
+  const proximos = delEjercicio.filter((o) => o.estado === 'proximo')
+  const presentados = delEjercicio
     .filter((o) => o.estado === 'presentado')
     .sort((a, b) => b.presentacion!.fechaPresentacion.localeCompare(a.presentacion!.fechaPresentacion))
 
@@ -141,9 +147,15 @@ export function PaginaImpuestos({ onCambio }: { onCambio: () => void }) {
     <section>
       <div className="cabecera">
         <h1>Impuestos</h1>
+        <select value={ejercicio} onChange={(e) => setEjercicio(Number(e.target.value))}>
+          {ejercicios.map((a) => <option key={a} value={a}>Ejercicio {a}</option>)}
+        </select>
         <a href="https://sede.agenciatributaria.gob.es" target="_blank" rel="noreferrer">Abrir la Sede de la AEAT</a>
       </div>
       <Errores errores={errores} />
+      {otrosPendientes ? (
+        <p className="avisos">Hay {otrosPendientes} modelo(s) vencido(s) de otros ejercicios. Elige el ejercicio arriba para verlos.</p>
+      ) : null}
 
       <h2>Pendientes de presentar ({pendientes.length})</h2>
       {pendientes.length ? pendientes.map(fila) : <p className="vacio">No tienes modelos pendientes. 🎉</p>}

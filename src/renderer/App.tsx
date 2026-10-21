@@ -30,7 +30,7 @@ export function App() {
 
   const contarPendientes = () =>
     llamar(api.calendarioFiscal(hoy()))
-      .then((l) => setPendientes(l.filter((o) => !o.condicional && (o.estado === 'vencido' || o.estado === 'en_plazo')).length))
+      .then((l) => setPendientes(l.filter((o) => o.ejercicio === Number(hoy().slice(0, 4)) && !o.condicional && (o.estado === 'vencido' || o.estado === 'en_plazo')).length))
       .catch(() => setPendientes(0))
   useEffect(() => { if (perfil) void contarPendientes() }, [perfil, pagina])
 
