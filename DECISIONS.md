@@ -168,3 +168,5 @@ Los gastos ya guardados no se recalculan. Descartado: una tabla completa por ep�
 **Límites:** historial de los últimos 4 turnos, respuestas de 700 tokens como máximo, temperatura 0,2, una pregunta cada vez. La conversación no se guarda en disco.
 
 **Sin probar con el modelo real:** la nube no llega a Hugging Face, así que el motor se ha probado cargando llama.cpp (Linux) y la conversación con un motor simulado. Falta la primera prueba en el Mac.
+
+**Chat flotante (2026-10-21, a petición de Nacho):** el asistente pasa de pestaña a un botón redondo abajo a la derecha que abre una ventana de chat en cualquier pantalla. La conversación se mantiene al cambiar de pantalla y se borra al cerrar la app.
