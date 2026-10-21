@@ -1,0 +1,157 @@
+import { useEffect, useState } from 'react'
+import {
+  etiquetaPeriodo, NOMBRE_MODELO, type ObligacionConEstado, type PresentacionNueva, type Resultado
+} from '../../core/calendario'
+import { api, llamar, mensajes } from '../api'
+import { Campo, CampoEuros, Errores, euros, hoy } from '../componentes'
+
+const RESULTADOS: Record<Resultado, string> = {
+  ingresar: 'A ingresar',
+  devolver: 'A devolver',
+  compensar: 'A compensar',
+  cero: 'Sin actividad (cero)',
+  negativa: 'Negativa'
+}
+
+function fechaCorta(f: string) {
+  return f.split('-').reverse().join('/')
+}
+
+function cuandoVence(o: ObligacionConEstado) {
+  if (o.estado === 'vencido') return `Venció hace ${-o.diasRestantes} día(s)`
+  if (o.estado === 'proximo') return `Del ${fechaCorta(o.desde)} al ${fechaCorta(o.hasta)}`
+  if (o.diasRestantes === 0) return 'Vence hoy'
+  return `Vence en ${o.diasRestantes} día(s)`
+}
+
+const claveDe = (o: { modelo: string; ejercicio: number; periodo: string }) => `${o.modelo}-${o.ejercicio}-${o.periodo}`
+
+export function PaginaImpuestos({ onCambio }: { onCambio: () => void }) {
+  const [lista, setLista] = useState<ObligacionConEstado[]>([])
+  const [marcando, setMarcando] = useState<PresentacionNueva | null>(null)
+  const [errores, setErrores] = useState<string[]>([])
+
+  const cargar = () => llamar(api.calendarioFiscal(hoy())).then(setLista).catch((e) => setErrores(mensajes(e)))
+  useEffect(() => { void cargar() }, [])
+
+  const guardar = async () => {
+    if (!marcando) return
+    try {
+      await llamar(api.registrarPresentacion(marcando))
+      setMarcando(null)
+      setErrores([])
+      await cargar()
+      onCambio()
+    } catch (e) {
+      setErrores(mensajes(e))
+    }
+  }
+
+  const deshacer = async (id: number) => {
+    if (!confirm('¿Quitar la marca de presentado?')) return
+    try {
+      await llamar(api.borrarPresentacion(id))
+      await cargar()
+      onCambio()
+    } catch (e) {
+      setErrores(mensajes(e))
+    }
+  }
+
+  const pendientes = lista.filter((o) => o.estado === 'vencido' || o.estado === 'en_plazo')
+  const proximos = lista.filter((o) => o.estado === 'proximo')
+  const presentados = lista
+    .filter((o) => o.estado === 'presentado')
+    .sort((a, b) => b.presentacion!.fechaPresentacion.localeCompare(a.presentacion!.fechaPresentacion))
+
+  const fila = (o: ObligacionConEstado) => {
+    const k = claveDe(o)
+    const abierto = marcando && claveDe(marcando) === k
+    return (
+      <div key={k} className={`obligacion ${o.estado}`}>
+        <div className="modelo">{o.modelo}</div>
+        <div className="detalle">
+          <strong>{NOMBRE_MODELO[o.modelo]}</strong> · {etiquetaPeriodo(o)}
+          {o.condicional ? <span className="etiqueta">solo si hay operaciones</span> : null}
+          <div className="nota">{o.nota ?? ''}</div>
+        </div>
+        <div className={`plazo ${o.estado}`}>{cuandoVence(o)}</div>
+        {o.estado !== 'proximo' ? (
+          <button className="secundario" onClick={() => setMarcando(abierto ? null : {
+            modelo: o.modelo, ejercicio: o.ejercicio, periodo: o.periodo, fechaPresentacion: hoy(),
+            resultado: 'ingresar', importe: 0, justificante: '', notas: ''
+          })}>Marcar como presentado</button>
+        ) : <span />}
+        {abierto ? (
+          <div className="marcar">
+            <div className="rejilla">
+              <Campo etiqueta="Fecha de presentación">
+                <input type="date" value={marcando.fechaPresentacion} onChange={(e) => setMarcando({ ...marcando, fechaPresentacion: e.target.value })} />
+              </Campo>
+              <Campo etiqueta="Resultado">
+                <select value={marcando.resultado} onChange={(e) => {
+                  const resultado = e.target.value as Resultado
+                  setMarcando({ ...marcando, resultado, importe: resultado === 'cero' || resultado === 'negativa' ? 0 : marcando.importe })
+                }}>
+                  {Object.entries(RESULTADOS).map(([k2, v]) => <option key={k2} value={k2}>{v}</option>)}
+                </select>
+              </Campo>
+              {marcando.resultado !== 'cero' && marcando.resultado !== 'negativa' ? (
+                <Campo etiqueta="Importe (€)"><CampoEuros valor={marcando.importe} onChange={(importe) => setMarcando({ ...marcando, importe })} /></Campo>
+              ) : null}
+              <Campo etiqueta="CSV o nº de justificante">
+                <input value={marcando.justificante} onChange={(e) => setMarcando({ ...marcando, justificante: e.target.value })} />
+              </Campo>
+            </div>
+            <div className="acciones">
+              <button onClick={guardar}>Guardar</button>
+              <button className="secundario" onClick={() => setMarcando(null)}>Cancelar</button>
+            </div>
+          </div>
+        ) : null}
+      </div>
+    )
+  }
+
+  return (
+    <section>
+      <div className="cabecera">
+        <h1>Impuestos</h1>
+        <a href="https://sede.agenciatributaria.gob.es" target="_blank" rel="noreferrer">Abrir la Sede de la AEAT</a>
+      </div>
+      <Errores errores={errores} />
+
+      <h2>Pendientes de presentar ({pendientes.length})</h2>
+      {pendientes.length ? pendientes.map(fila) : <p className="vacio">No tienes modelos pendientes. 🎉</p>}
+
+      <h2>Próximos</h2>
+      {proximos.length ? proximos.map(fila) : <p className="vacio">No hay plazos en los próximos meses.</p>}
+
+      <h2>Presentados</h2>
+      <table>
+        <thead><tr><th>Modelo</th><th>Periodo</th><th>Presentado</th><th>Resultado</th><th className="num">Importe</th><th>Justificante</th><th /></tr></thead>
+        <tbody>
+          {presentados.map((o) => {
+            const p = o.presentacion!
+            return (
+              <tr key={p.id}>
+                <td>{o.modelo} · {NOMBRE_MODELO[o.modelo]}</td>
+                <td>{etiquetaPeriodo(o)}</td>
+                <td>{fechaCorta(p.fechaPresentacion)}{p.fechaPresentacion > o.hasta ? ' (fuera de plazo)' : ''}</td>
+                <td>{RESULTADOS[p.resultado]}</td>
+                <td className="num">{euros(p.importe)}</td>
+                <td>{p.justificante}</td>
+                <td className="derecha"><button className="peligro" onClick={() => deshacer(p.id)}>Deshacer</button></td>
+              </tr>
+            )
+          })}
+          {!presentados.length ? <tr><td colSpan={7} className="vacio">Aún no has marcado ningún modelo como presentado.</td></tr> : null}
+        </tbody>
+      </table>
+      <p className="nota">
+        Plazos generales de la AEAT; si el último día cae en fin de semana pasa al lunes. Los festivos no se tienen en cuenta.
+        Los modelos 111, 115, 349 y 347 aparecen solo si tus ingresos y gastos los hacen necesarios.
+      </p>
+    </section>
+  )
+}

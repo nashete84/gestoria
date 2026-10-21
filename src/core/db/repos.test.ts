@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { perfilBase } from '../fixtures'
 import type { ClienteNuevo, GastoNuevo, IngresoNuevo } from '../tipos'
 import {
-  borrarCliente, crearCliente, crearGasto, crearIngreso, ErrorValidacion, guardarPerfil, leerPerfil,
+  actividadFiscal, borrarCliente, crearCliente, registrarPresentacion, crearGasto, crearIngreso, ErrorValidacion, guardarPerfil, leerPerfil,
   listarIngresos, periodoTrimestre, resumen
 } from './repos'
 import { migrar } from './schema'
@@ -30,7 +30,7 @@ const gasto = (extra: Partial<GastoNuevo> = {}): GastoNuevo => ({
 
 it('las migraciones son idempotentes', () => {
   migrar(db)
-  expect(db.pragma('user_version', { simple: true })).toBe(1)
+  expect(db.pragma('user_version', { simple: true })).toBe(2)
 })
 
 it('guarda y lee el perfil normalizando el NIF', () => {
@@ -84,4 +84,24 @@ describe('ingresos y resumen', () => {
 
 it('periodoTrimestre', () => {
   expect(periodoTrimestre(2026, 4)).toEqual({ desde: '2026-10-01', hasta: '2026-12-31' })
+})
+
+describe('presentaciones y actividad', () => {
+  it('no permite registrar dos veces el mismo modelo y periodo', () => {
+    const p = { modelo: '303' as const, ejercicio: 2026, periodo: '1T' as const, fechaPresentacion: '2026-04-15', resultado: 'ingresar' as const, importe: 1000, justificante: 'ABC', notas: '' }
+    registrarPresentacion(db, p)
+    expect(() => registrarPresentacion(db, p)).toThrow(/ya está marcado/)
+  })
+
+  it('detecta 111, 115, 349 y 347', () => {
+    const c = crearCliente(db, { ...clienteEs, tipo: 'particular', nif: '' })
+    crearIngreso(db, ingreso(c.id, { retencionPct: 0, base: 300000 })) // 3.630 € con IVA a un particular → 347
+    crearGasto(db, gasto({ categoria: 'profesionales', retencionPct: 15, fecha: '2026-05-10' }))
+    crearGasto(db, gasto({ categoria: 'alquiler_local', retencionPct: 19, fecha: '2026-08-01' }))
+    crearGasto(db, gasto({ operacion: 'intracomunitaria', paisProveedor: 'IE', fecha: '2026-11-02' }))
+    expect(actividadFiscal(db)).toEqual({
+      retencionesProfesionales: ['2026-2T'], retencionesAlquiler: ['2026-3T'],
+      intracomunitarias: ['2026-4T'], ejerciciosCon347: [2026]
+    })
+  })
 })

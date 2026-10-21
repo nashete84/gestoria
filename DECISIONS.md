@@ -36,3 +36,20 @@
 - Comunidad de Madrid, IVA régimen general, sin recargo de equivalencia.
 - Gastos de suministros de vivienda al 30% por defecto (el % de vivienda afecta lo ajusta el usuario).
 - Teléfono e internet al 50% por defecto.
+
+## Pestaña Impuestos (2026-10-21)
+
+**Calendario calculado, no guardado.** Las obligaciones se generan cada vez a partir del perfil, la fecha de hoy y los ingresos y gastos; solo se guardan las presentaciones. Así, si añades un gasto con retención, el 111 aparece solo. Descartado: guardar una lista de obligaciones, que se desincroniza con los datos.
+
+**Qué modelos aparecen:**
+- 303 siempre; 130 salvo que marques en el perfil que estás exento (70% de ingresos con retención el año anterior).
+- 111, 115 y 349 solo en trimestres con operaciones (gastos con retención, alquiler con retención, operaciones UE). En trimestres aún abiertos aparecen como "solo si hay operaciones" si los tuviste en el último año.
+- 190 y 180 si hubo 111 o 115 ese año; 347 si algún tercero nacional supera 3.005,06 € (sin contar operaciones con retención); 390 y renta siempre.
+
+**Plazos generales con fin de semana trasladado al lunes.** Los festivos nacionales no se calculan; la renta usa 1 de abril a 30 de junio como aproximación. Descartado: descargar el calendario oficial de la AEAT, que no tiene un formato estable para leerlo.
+
+**"Controlar desde" filtra por fin de plazo.** Aparece todo lo que vencía a partir de esa fecha (por defecto, 1 de enero del año en curso), aunque el periodo sea anterior: así el 4T del año pasado y la renta salen en el año en que se presentan.
+
+**Aviso al abrir la app** con una notificación del sistema si hay modelos vencidos o que vencen en 10 días, y un contador en la pestaña. Descartado: notificaciones con la app cerrada, que exigiría un proceso en segundo plano.
+
+**Presentaciones únicas por modelo y periodo.** Una complementaria o sustitutiva se registrará en el paso 3, cuando la app genere los modelos.

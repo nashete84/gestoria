@@ -1,4 +1,8 @@
 import type BetterSqlite3 from 'better-sqlite3'
+import {
+  clasificar, generarObligaciones, type Actividad, type Modelo, type ObligacionConEstado, type Periodo,
+  type Presentacion, type PresentacionNueva, type Resultado
+} from '../calendario'
 import { calcularGasto, calcularIngreso } from '../fiscalidad'
 import { porcentaje } from '../money'
 import { normalizarNif } from '../nif'
@@ -274,4 +278,77 @@ export function resumen(db: Db, desde: string, hasta: string): Resumen {
     retencionesPracticadas: suma(gastos.map((g) => g.cuotaRetencion)),
     bienesInversionPendientes: gastos.filter((g) => g.bienInversion).length
   }
+}
+
+// ---------- Presentaciones y calendario ----------
+
+const MODELOS: Modelo[] = ['303', '130', '111', '115', '349', '390', '347', '190', '180', '100']
+const RESULTADOS: Resultado[] = ['ingresar', 'devolver', 'compensar', 'cero', 'negativa']
+
+function aPresentacion(f: Fila): Presentacion {
+  return {
+    id: f.id as number, modelo: f.modelo as Modelo, ejercicio: f.ejercicio as number,
+    periodo: f.periodo as Periodo, fechaPresentacion: f.fecha_presentacion as string,
+    resultado: f.resultado as Resultado, importe: f.importe as number,
+    justificante: f.justificante as string, notas: f.notas as string
+  }
+}
+
+export function listarPresentaciones(db: Db): Presentacion[] {
+  return (db.prepare('SELECT * FROM presentaciones ORDER BY fecha_presentacion DESC, id DESC').all() as Fila[]).map(aPresentacion)
+}
+
+export function registrarPresentacion(db: Db, p: PresentacionNueva): Presentacion {
+  const e: string[] = []
+  if (!MODELOS.includes(p.modelo)) e.push('Modelo no válido.')
+  if (!Number.isInteger(p.ejercicio) || p.ejercicio < 2000) e.push('Ejercicio no válido.')
+  if (!['1T', '2T', '3T', '4T', '0A'].includes(p.periodo)) e.push('Periodo no válido.')
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(p.fechaPresentacion)) e.push('La fecha de presentación no es válida.')
+  if (!RESULTADOS.includes(p.resultado)) e.push('Resultado no válido.')
+  if (!Number.isInteger(p.importe) || p.importe < 0) e.push('El importe no es válido.')
+  if (['cero', 'negativa'].includes(p.resultado) && p.importe !== 0) e.push('Una declaración sin actividad o negativa no tiene importe.')
+  comprobar(e)
+  const existe = db.prepare('SELECT id FROM presentaciones WHERE modelo = ? AND ejercicio = ? AND periodo = ?')
+    .get(p.modelo, p.ejercicio, p.periodo)
+  if (existe) throw new ErrorValidacion([`El modelo ${p.modelo} de ese periodo ya está marcado como presentado.`])
+  const r = db.prepare(`INSERT INTO presentaciones (modelo, ejercicio, periodo, fecha_presentacion, resultado, importe, justificante, notas)
+    VALUES (@modelo, @ejercicio, @periodo, @fechaPresentacion, @resultado, @importe, @justificante, @notas)`).run(p)
+  return { ...p, id: Number(r.lastInsertRowid) }
+}
+
+export function borrarPresentacion(db: Db, id: number): void {
+  db.prepare('DELETE FROM presentaciones WHERE id = ?').run(id)
+}
+
+const TRIMESTRE_SQL = "substr(fecha, 1, 4) || '-' || ((CAST(substr(fecha, 6, 2) AS INTEGER) + 2) / 3) || 'T'"
+export const LIMITE_347 = 300506 // 3.005,06 € en céntimos
+
+/** Qué trimestres tienen operaciones que obligan a 111, 115, 349 y qué ejercicios al 347. */
+export function actividadFiscal(db: Db): Actividad {
+  const trimestres = (sql: string) => (db.prepare(sql).all() as { k: string }[]).map((x) => x.k)
+  const ejercicios347 = db.prepare(`
+    SELECT DISTINCT anio FROM (
+      SELECT substr(i.fecha, 1, 4) anio, i.cliente_id tercero, SUM(i.base + i.cuota_iva) total
+        FROM ingresos i WHERE i.operacion = 'nacional' AND i.cuota_retencion = 0 AND i.cliente_id IS NOT NULL
+        GROUP BY anio, tercero
+      UNION ALL
+      SELECT substr(g.fecha, 1, 4) anio, COALESCE(NULLIF(g.nif_proveedor, ''), g.proveedor) tercero, SUM(g.base + g.cuota_iva) total
+        FROM gastos g WHERE g.operacion = 'nacional' AND g.cuota_retencion = 0
+        GROUP BY anio, tercero
+    ) WHERE total > ${LIMITE_347}`).all() as { anio: string }[]
+  return {
+    retencionesProfesionales: trimestres(`SELECT DISTINCT ${TRIMESTRE_SQL} k FROM gastos WHERE cuota_retencion > 0 AND categoria <> 'alquiler_local'`),
+    retencionesAlquiler: trimestres(`SELECT DISTINCT ${TRIMESTRE_SQL} k FROM gastos WHERE cuota_retencion > 0 AND categoria = 'alquiler_local'`),
+    intracomunitarias: trimestres(`SELECT DISTINCT ${TRIMESTRE_SQL} k FROM ingresos WHERE operacion = 'intracomunitaria'
+      UNION SELECT DISTINCT ${TRIMESTRE_SQL} k FROM gastos WHERE operacion = 'intracomunitaria'`),
+    ejerciciosCon347: ejercicios347.map((x) => Number(x.anio))
+  }
+}
+
+export function calendarioFiscal(db: Db, hoy: string): ObligacionConEstado[] {
+  const perfil = leerPerfil(db)
+  if (!perfil) return []
+  const inicio = perfil.inicioControl || `${hoy.slice(0, 4)}-01-01`
+  const obligaciones = generarObligaciones(perfil, inicio, hoy, actividadFiscal(db))
+  return clasificar(obligaciones, listarPresentaciones(db), hoy)
 }

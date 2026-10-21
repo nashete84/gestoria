@@ -1,17 +1,19 @@
 import { useEffect, useState } from 'react'
 import type { Perfil } from '../core/tipos'
 import { api, llamar, mensajes } from './api'
-import { Errores } from './componentes'
+import { Errores, hoy } from './componentes'
 import { PaginaClientes } from './pages/Clientes'
 import { PaginaGastos } from './pages/Gastos'
+import { PaginaImpuestos } from './pages/Impuestos'
 import { PaginaIngresos } from './pages/Ingresos'
 import { PaginaPerfil } from './pages/Perfil'
 import { PaginaResumen } from './pages/Resumen'
 
-type Pagina = 'resumen' | 'ingresos' | 'gastos' | 'clientes' | 'perfil'
+type Pagina = 'resumen' | 'impuestos' | 'ingresos' | 'gastos' | 'clientes' | 'perfil'
 
 const MENU: { id: Pagina; nombre: string }[] = [
   { id: 'resumen', nombre: 'Resumen' },
+  { id: 'impuestos', nombre: 'Impuestos' },
   { id: 'ingresos', nombre: 'Ingresos' },
   { id: 'gastos', nombre: 'Gastos' },
   { id: 'clientes', nombre: 'Clientes' },
@@ -22,6 +24,13 @@ export function App() {
   const [perfil, setPerfil] = useState<Perfil | null | undefined>(undefined)
   const [pagina, setPagina] = useState<Pagina>('resumen')
   const [errores, setErrores] = useState<string[]>([])
+  const [pendientes, setPendientes] = useState(0)
+
+  const contarPendientes = () =>
+    llamar(api.calendarioFiscal(hoy()))
+      .then((l) => setPendientes(l.filter((o) => !o.condicional && (o.estado === 'vencido' || o.estado === 'en_plazo')).length))
+      .catch(() => setPendientes(0))
+  useEffect(() => { if (perfil) void contarPendientes() }, [perfil, pagina])
 
   useEffect(() => {
     llamar(api.leerPerfil())
@@ -39,6 +48,7 @@ export function App() {
           <button key={m.id} className={pagina === m.id ? 'activo' : ''} disabled={!perfil && m.id !== 'perfil'}
             onClick={() => setPagina(m.id)}>
             {m.nombre}
+            {m.id === 'impuestos' && pendientes > 0 ? <span className="insignia">{pendientes}</span> : null}
           </button>
         ))}
         {perfil ? <div className="pie">{perfil.nombre}<br />IAE {perfil.epigrafe.codigo}</div> : null}
@@ -47,6 +57,7 @@ export function App() {
         {!perfil ? <p className="avisos">Empieza rellenando tu perfil fiscal.</p> : null}
         {pagina === 'perfil' ? <PaginaPerfil onGuardado={setPerfil} /> : null}
         {perfil && pagina === 'resumen' ? <PaginaResumen /> : null}
+        {perfil && pagina === 'impuestos' ? <PaginaImpuestos onCambio={contarPendientes} /> : null}
         {perfil && pagina === 'ingresos' ? <PaginaIngresos perfil={perfil} /> : null}
         {perfil && pagina === 'gastos' ? <PaginaGastos /> : null}
         {perfil && pagina === 'clientes' ? <PaginaClientes /> : null}

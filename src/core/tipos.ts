@@ -28,6 +28,10 @@ export interface Perfil {
   /** Alta en el Registro de Operadores Intracomunitarios (necesaria para facturar sin IVA a empresas UE). */
   altaRoi: boolean
   comunidad: 'MD'
+  /** No obligado al 130: el año anterior al menos el 70% de los ingresos llevaron retención. */
+  exento130?: boolean
+  /** Fecha desde la que la app controla los modelos (AAAA-MM-DD). Por defecto, 1 de enero del año en curso. */
+  inicioControl?: string
 }
 
 export type TipoCliente = 'empresa' | 'particular'

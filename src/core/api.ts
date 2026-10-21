@@ -1,4 +1,5 @@
 // Contrato entre la interfaz (renderer) y el proceso principal.
+import type { ObligacionConEstado, Presentacion, PresentacionNueva } from './calendario'
 import type { Resumen } from './db/repos'
 import type {
   Adjunto, Cliente, ClienteNuevo, Gasto, GastoNuevo, Ingreso, IngresoNuevo, Perfil
@@ -32,6 +33,11 @@ export interface ApiGestoria {
   borrarAdjunto(id: number): Promise<Resultado<void>>
 
   resumen(desde: string, hasta: string): Promise<Resultado<Resumen>>
+
+  /** Modelos con su estado (pendiente, próximo, presentado) a fecha de `hoy`. */
+  calendarioFiscal(hoy: string): Promise<Resultado<ObligacionConEstado[]>>
+  registrarPresentacion(p: PresentacionNueva): Promise<Resultado<Presentacion>>
+  borrarPresentacion(id: number): Promise<Resultado<void>>
   /** Muestra la carpeta donde están la base de datos y los adjuntos (para copias de seguridad). */
   abrirCarpetaDatos(): Promise<Resultado<void>>
 }
@@ -42,5 +48,5 @@ export const METODOS_API = [
   'listarIngresos', 'crearIngreso', 'actualizarIngreso', 'borrarIngreso',
   'listarGastos', 'crearGasto', 'actualizarGasto', 'borrarGasto',
   'listarAdjuntos', 'adjuntar', 'abrirAdjunto', 'borrarAdjunto',
-  'resumen', 'abrirCarpetaDatos'
+  'resumen', 'calendarioFiscal', 'registrarPresentacion', 'borrarPresentacion', 'abrirCarpetaDatos'
 ] as const satisfies readonly (keyof ApiGestoria)[]

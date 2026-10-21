@@ -1,5 +1,5 @@
 import Database from 'better-sqlite3'
-import { app, BrowserWindow, dialog, ipcMain, shell } from 'electron'
+import { app, BrowserWindow, dialog, ipcMain, Notification, shell } from 'electron'
 import { join, resolve, sep } from 'node:path'
 import type { ApiGestoria, Resultado } from '../core/api'
 import * as repos from '../core/db/repos'
@@ -28,6 +28,31 @@ const id = (v: unknown) => {
 const entidad = (v: unknown) => {
   if (v !== 'ingreso' && v !== 'gasto') throw new repos.ErrorValidacion(['Tipo de adjunto no válido.'])
   return v
+}
+
+const fechaValida = (v: unknown) => {
+  if (typeof v !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(v)) throw new repos.ErrorValidacion(['Fecha no válida.'])
+  return v
+}
+
+function hoyLocal(): string {
+  const d = new Date()
+  return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10)
+}
+
+/** Al abrir la app, avisa de los modelos vencidos o que vencen en los próximos 10 días. */
+function avisarImpuestos() {
+  if (!Notification.isSupported()) return
+  const urgentes = repos.calendarioFiscal(db, hoyLocal()).filter(
+    (o) => !o.condicional && (o.estado === 'vencido' || (o.estado === 'en_plazo' && o.diasRestantes <= 10))
+  )
+  if (!urgentes.length) return
+  const vencidos = urgentes.filter((o) => o.estado === 'vencido').length
+  const proximo = urgentes.find((o) => o.estado === 'en_plazo')
+  const partes = []
+  if (vencidos) partes.push(`${vencidos} modelo(s) con el plazo vencido`)
+  if (proximo) partes.push(`el ${proximo.modelo} vence el ${proximo.hasta.split('-').reverse().join('/')}`)
+  new Notification({ title: 'Impuestos pendientes', body: partes.join(' y ') + '.' }).show()
 }
 
 type Handlers = { [K in keyof ApiGestoria]: (...args: any[]) => unknown }
@@ -90,6 +115,9 @@ const handlers: Handlers = {
   },
 
   resumen: (d, h) => repos.resumen(db, d, h),
+  calendarioFiscal: (hoy) => repos.calendarioFiscal(db, fechaValida(hoy)),
+  registrarPresentacion: (p) => repos.registrarPresentacion(db, p),
+  borrarPresentacion: (i) => repos.borrarPresentacion(db, id(i)),
   abrirCarpetaDatos: async () => {
     await shell.openPath(carpetaDatos())
   }
@@ -141,6 +169,11 @@ app.whenReady().then(() => {
   abrirBaseDeDatos()
   registrarIpc()
   crearVentana()
+  try {
+    avisarImpuestos()
+  } catch (err) {
+    console.error(err)
+  }
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) crearVentana()
   })

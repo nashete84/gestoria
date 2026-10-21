@@ -98,6 +98,13 @@ export function PaginaPerfil({ onGuardado }: { onGuardado: (p: Perfil) => void }
           <input type="checkbox" checked={p.altaRoi} onChange={(e) => set('altaRoi', e.target.checked)} />
           Estoy dado de alta en el ROI (operador intracomunitario)
         </label>
+        <label className="check">
+          <input type="checkbox" checked={!!p.exento130} onChange={(e) => set('exento130', e.target.checked)} />
+          No presento el 130 (el año pasado al menos el 70% de mis ingresos llevaron retención)
+        </label>
+        <Campo etiqueta="Controlar impuestos desde" ayuda="Los modelos cuyo plazo terminó antes de esta fecha no aparecen.">
+          <input type="date" value={p.inicioControl ?? `${hoy().slice(0, 4)}-01-01`} onChange={(e) => set('inicioControl', e.target.value)} />
+        </Campo>
       </div>
       <p className="nota">
         Régimen: estimación directa simplificada · IVA régimen general · Comunidad de Madrid.

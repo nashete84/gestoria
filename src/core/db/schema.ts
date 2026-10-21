@@ -71,6 +71,20 @@ const MIGRACIONES: string[] = [
     creado TEXT NOT NULL DEFAULT (datetime('now'))
   );
   CREATE INDEX adjuntos_entidad ON adjuntos(entidad, entidad_id);
+  `,
+  `
+  CREATE TABLE presentaciones (
+    id INTEGER PRIMARY KEY,
+    modelo TEXT NOT NULL,
+    ejercicio INTEGER NOT NULL,
+    periodo TEXT NOT NULL CHECK (periodo IN ('1T', '2T', '3T', '4T', '0A')),
+    fecha_presentacion TEXT NOT NULL,
+    resultado TEXT NOT NULL CHECK (resultado IN ('ingresar', 'devolver', 'compensar', 'cero', 'negativa')),
+    importe INTEGER NOT NULL DEFAULT 0,
+    justificante TEXT NOT NULL DEFAULT '',
+    notas TEXT NOT NULL DEFAULT '',
+    UNIQUE (modelo, ejercicio, periodo)
+  );
   `
 ]
 
