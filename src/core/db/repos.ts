@@ -53,8 +53,12 @@ function aCliente(f: Fila): Cliente {
   }
 }
 
+// Códigos habituales que no son ISO 3166: Reino Unido es GB y Grecia GR.
+const ALIAS_PAIS: Record<string, string> = { UK: 'GB', EL: 'GR' }
+
 function prepararCliente(c: ClienteNuevo): ClienteNuevo {
-  return { ...c, nif: normalizarNif(c.nif), pais: c.pais.trim().toUpperCase() }
+  const pais = c.pais.trim().toUpperCase()
+  return { ...c, nif: normalizarNif(c.nif), pais: ALIAS_PAIS[pais] ?? pais }
 }
 
 export function listarClientes(db: Db): Cliente[] {

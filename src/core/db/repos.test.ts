@@ -44,6 +44,9 @@ describe('clientes', () => {
     const c = crearCliente(db, clienteEs)
     expect(c).toMatchObject({ nif: 'B12345674', pais: 'ES' })
   })
+  it('convierte UK en GB y admite empresa británica sin identificador', () => {
+    expect(crearCliente(db, { ...clienteEs, nombre: 'London Ltd', pais: 'uk', nif: '' }).pais).toBe('GB')
+  })
   it('rechaza una empresa UE sin prefijo de país', () => {
     expect(() => crearCliente(db, { ...clienteEs, pais: 'FR', nif: '12345678901' })).toThrow(/NIF-IVA/)
   })
