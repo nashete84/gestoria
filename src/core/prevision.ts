@@ -34,6 +34,8 @@ export interface Prevision {
   simulacion: ResultadoSimulador
   /** IRPF que falta por pagar: el del año menos retenciones y 130 ya pagados (lo cubrirán los próximos 130 y la renta). */
   irpfPendiente: number
+  /** Si presentas el 130 (perfil): sin él, lo que falta se paga todo en la renta. */
+  presenta130: boolean
   avisos: string[]
 }
 
@@ -105,6 +107,6 @@ export function preverIngresos(e: EntradaPrevision): Prevision {
 
   return {
     ejercicio: e.ejercicio, meses, mediaIngresos, mediaGastos, mesesBase,
-    ingresosReales, ingresosPrevistos, ingresosAnio, gastosAnio, simulacion, irpfPendiente, avisos
+    ingresosReales, ingresosPrevistos, ingresosAnio, gastosAnio, simulacion, irpfPendiente, presenta130: !e.perfil.exento130, avisos
   }
 }

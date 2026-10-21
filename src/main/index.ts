@@ -200,6 +200,7 @@ const handlers: Handlers = {
   informeIngresosGastos: (ej, hoy) => informes.informeIngresosGastosDb(db, id(ej), fechaValida(hoy)),
   informeImpuestos: (ej, hoy) => informes.informeImpuestosDb(db, id(ej), fechaValida(hoy)),
   informePrevision: (ej, hoy) => informes.prevision(db, id(ej), fechaValida(hoy)),
+  ingresosConRetencion: (ej) => informes.ingresosConRetencion(db, id(ej)),
   simularIrpf: (ej, entrada) => informes.simulacionIrpf(db, id(ej), entrada),
   estadoAsistente: async () => ({ estado: asistente().estado(), modelo: asistente().info }),
   descargarModeloAsistente: () => asistente().descargar(),

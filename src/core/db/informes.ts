@@ -102,3 +102,15 @@ export function simulacionIrpf(db: Db, ejercicio: number, entrada: EntradaSimula
   const e = { ingresos: entrada.ingresos, gastos: entrada.gastos, retenciones: entrada.retenciones, pagos130: entrada.pagos130 }
   return simularIrpf(ejercicio, leerPerfil(db)!, leerDatosRenta(db, ejercicio), e)
 }
+
+/**
+ * Qué parte de los ingresos de la actividad del año llevó retención. Si es al menos el 70 %,
+ * el año siguiente no hay que presentar el 130 (art. 109.1 del Reglamento del IRPF).
+ */
+export function ingresosConRetencion(db: Db, ejercicio: number): { total: number; conRetencion: number; pct: number | null } {
+  if (!Number.isInteger(ejercicio) || ejercicio < 2000 || ejercicio > 2100) throw new ErrorValidacion(['Ejercicio no válido.'])
+  const ingresos = listarIngresos(db, `${ejercicio}-01-01`, `${ejercicio}-12-31`)
+  const total = ingresos.reduce((a, i) => a + i.base, 0)
+  const conRetencion = ingresos.filter((i) => i.cuotaRetencion > 0).reduce((a, i) => a + i.base, 0)
+  return { total, conRetencion, pct: total > 0 ? Math.round((conRetencion / total) * 1000) / 10 : null }
+}

@@ -8,12 +8,13 @@ export function SimuladorIrpf({ ejercicio }: { ejercicio: number }) {
   const [base, setBase] = useState<EntradaSimulador | null>(null)
   const [entrada, setEntrada] = useState<EntradaSimulador | null>(null)
   const [r, setR] = useState<ResultadoSimulador | null>(null)
+  const [presenta130, setPresenta130] = useState(true)
   const [version, setVersion] = useState(0) // para rellenar de nuevo los campos al restablecer
   const [errores, setErrores] = useState<string[]>([])
 
   useEffect(() => {
     llamar(api.informePrevision(ejercicio, hoy()))
-      .then((p) => { setBase(p.simulacion.entrada); setEntrada(p.simulacion.entrada); setVersion((v) => v + 1) })
+      .then((p) => { setBase(p.simulacion.entrada); setPresenta130(p.presenta130); setEntrada(p.simulacion.entrada); setVersion((v) => v + 1) })
       .catch((e) => setErrores(mensajes(e)))
   }, [ejercicio])
 
@@ -33,7 +34,7 @@ export function SimuladorIrpf({ ejercicio }: { ejercicio: number }) {
         <Campo etiqueta="Ingresos del año (sin IVA)"><CampoEuros valor={entrada.ingresos} onChange={set('ingresos')} /></Campo>
         <Campo etiqueta="Gastos deducibles del año" ayuda="Con sus % deducibles y las amortizaciones."><CampoEuros valor={entrada.gastos} onChange={set('gastos')} /></Campo>
         <Campo etiqueta="Retenciones de tus clientes"><CampoEuros valor={entrada.retenciones} onChange={set('retenciones')} /></Campo>
-        <Campo etiqueta="Pagos del 130 hechos"><CampoEuros valor={entrada.pagos130} onChange={set('pagos130')} /></Campo>
+        {presenta130 || entrada.pagos130 ? <Campo etiqueta="Pagos del 130 hechos"><CampoEuros valor={entrada.pagos130} onChange={set('pagos130')} /></Campo> : null}
       </div>
       {base ? <div className="acciones"><button className="secundario" onClick={() => { setEntrada(base); setVersion((v) => v + 1) }}>Volver a mis datos</button></div> : null}
       <Errores errores={errores} />
@@ -43,7 +44,7 @@ export function SimuladorIrpf({ ejercicio }: { ejercicio: number }) {
             <div className="cifra"><span>IRPF del año</span><strong>{euros(r.irpf)}</strong><small>Tipo medio {e.tipoMedio.toLocaleString('es-ES')} %</small></div>
             <div className="cifra"><span>Por cada 1.000 € más que factures</span><strong>{euros(r.porCadaMil)}</strong><small>de IRPF ({r.tipoMarginal.toLocaleString('es-ES')} % marginal)</small></div>
             <div className="cifra"><span>Te queda después de gastos e IRPF</span><strong>{euros(r.neto)}</strong><small>Sin contar el IVA, que no es tuyo</small></div>
-            <div className="cifra"><span>{e.resultado >= 0 ? 'Renta: a pagar en junio' : 'Renta: a devolver'}</span><strong>{euros(Math.abs(e.resultado))}</strong><small>Tras retenciones y pagos del 130</small></div>
+            <div className="cifra"><span>{e.resultado >= 0 ? 'Renta: a pagar en junio' : 'Renta: a devolver'}</span><strong>{euros(Math.abs(e.resultado))}</strong><small>{presenta130 ? 'Tras retenciones y pagos del 130' : 'Tras las retenciones de tus clientes'}</small></div>
           </div>
           <table style={{ marginTop: 12 }}>
             <tbody>

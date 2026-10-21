@@ -82,6 +82,8 @@ export interface ApiGestoria {
   informeIngresosGastos(ejercicio: number, hoy: string): Promise<Resultado<InformeIngresosGastos>>
   informeImpuestos(ejercicio: number, hoy: string): Promise<Resultado<InformeImpuestos>>
   informePrevision(ejercicio: number, hoy: string): Promise<Resultado<Prevision>>
+  /** % de los ingresos del año que llevó retención (decide si el año siguiente hay que presentar el 130). */
+  ingresosConRetencion(ejercicio: number): Promise<Resultado<{ total: number; conRetencion: number; pct: number | null }>>
   simularIrpf(ejercicio: number, entrada: EntradaSimulador): Promise<Resultado<ResultadoSimulador>>
 
   /** Asistente de ayuda local: estado del modelo (descargado o no) y su información. */
@@ -112,6 +114,6 @@ export const METODOS_API = [
   'listarFacturas', 'vistaPreviaFactura', 'guardarPdfBorrador', 'emitirFactura', 'detalleFactura', 'guardarPdfFactura', 'xmlVerifactu', 'anularFactura', 'enviarVerifactu',
   'estimacionRenta', 'guardarDatosRenta',
   'calcularModelo', 'guardarFicheroModelo', 'leerAjustesModelos', 'guardarAjustesModelos',
-  'abrirCarpetaDatos', 'informeIngresosGastos', 'informeImpuestos', 'informePrevision', 'simularIrpf',
+  'abrirCarpetaDatos', 'informeIngresosGastos', 'informeImpuestos', 'informePrevision', 'simularIrpf', 'ingresosConRetencion',
   'estadoAsistente', 'descargarModeloAsistente', 'cancelarDescargaAsistente', 'preguntarAsistente', 'cancelarPreguntaAsistente'
 ] as const satisfies readonly (keyof ApiGestoria)[]

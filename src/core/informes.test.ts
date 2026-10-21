@@ -1,6 +1,6 @@
 import Database from 'better-sqlite3'
 import { beforeEach, describe, expect, it } from 'vitest'
-import { informeImpuestosDb, informeIngresosGastosDb, prevision, simulacionIrpf } from './db/informes'
+import { informeImpuestosDb, informeIngresosGastosDb, ingresosConRetencion, prevision, simulacionIrpf } from './db/informes'
 import { crearCliente, crearGasto, crearIngreso, ErrorValidacion, guardarPerfil, registrarPresentacion } from './db/repos'
 import { migrar } from './db/schema'
 import { perfilBase } from './fixtures'
@@ -128,5 +128,22 @@ describe('previsión de ingresos', () => {
     expect(p.ingresosPrevistos).toBe(0)
     expect(p.meses.every((m) => m.previsto === null)).toBe(true)
     expect(p.ingresosAnio).toBe(e(1000))
+  })
+})
+
+describe('sin pago fraccionado (130)', () => {
+  it('el informe de impuestos y la previsión no cuentan con el 130', () => {
+    guardarPerfil(db, { ...perfilBase, exento130: true })
+    ingreso('2026-02-01', 10000)
+    const r = informeImpuestosDb(db, 2026, '2026-05-21')
+    expect(r.lineas.some((l) => l.modelo === '130')).toBe(false)
+    expect(prevision(db, 2026, '2026-05-21').presenta130).toBe(false)
+  })
+
+  it('calcula qué parte de los ingresos llevó retención (regla del 70 %)', () => {
+    ingreso('2025-02-01', 7000, { retencionPct: 15 })
+    ingreso('2025-03-01', 3000) // cliente extranjero: sin retención
+    expect(ingresosConRetencion(db, 2025)).toEqual({ total: e(10000), conRetencion: e(7000), pct: 70 })
+    expect(ingresosConRetencion(db, 2024).pct).toBeNull()
   })
 })

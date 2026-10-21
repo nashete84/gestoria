@@ -17,9 +17,11 @@ export function PaginaPerfil({ onGuardado }: { onGuardado: (p: Perfil) => void }
   const [p, setP] = useState<Perfil>(VACIO)
   const [errores, setErrores] = useState<string[]>([])
   const [guardado, setGuardado] = useState(false)
+  const [retenidoAnterior, setRetenidoAnterior] = useState<number | null>(null)
 
   useEffect(() => {
     llamar(api.leerPerfil()).then((x) => x && setP(x)).catch((e) => setErrores(mensajes(e)))
+    llamar(api.ingresosConRetencion(Number(hoy().slice(0, 4)) - 1)).then((r) => setRetenidoAnterior(r.pct)).catch(() => {})
   }, [])
 
   const set = <K extends keyof Perfil>(k: K, v: Perfil[K]) => {
@@ -82,10 +84,13 @@ export function PaginaPerfil({ onGuardado }: { onGuardado: (p: Perfil) => void }
           <input type="checkbox" checked={p.altaRoi} onChange={(e) => set('altaRoi', e.target.checked)} />
           Estoy dado de alta en el ROI (operador intracomunitario)
         </label>
-        <label className="check">
-          <input type="checkbox" checked={!!p.exento130} onChange={(e) => set('exento130', e.target.checked)} />
-          No presento el 130 (el año pasado al menos el 70% de mis ingresos llevaron retención)
-        </label>
+        <Campo etiqueta="Pago fraccionado del IRPF (modelo 130)"
+          ayuda={p.exento130 ? 'No tendrás avisos ni cálculos del 130: todo el IRPF que falte se paga en la renta.' : 'Cada trimestre adelantas el 20 % de tu beneficio.'}>
+          <select value={p.exento130 ? 'no' : 'si'} onChange={(e) => set('exento130', e.target.value === 'no')}>
+            <option value="si">Sí, presento el 130 cada trimestre</option>
+            <option value="no">No, no fracciono (exento del 130)</option>
+          </select>
+        </Campo>
         <Campo etiqueta="% de la vivienda donde trabajas" ayuda="m² del despacho ÷ m² de la vivienda. Sirve para deducir luz, agua, gas e internet de casa.">
           <input type="number" min={0} max={100} step="0.1" value={p.pctViviendaAfecta ?? 0}
             onChange={(e) => set('pctViviendaAfecta', Number(e.target.value))} />
@@ -94,6 +99,13 @@ export function PaginaPerfil({ onGuardado }: { onGuardado: (p: Perfil) => void }
           <input type="date" value={p.inicioControl ?? `${hoy().slice(0, 4)}-01-01`} onChange={(e) => set('inicioControl', e.target.value)} />
         </Campo>
       </div>
+      {p.exento130 && retenidoAnterior !== null && retenidoAnterior < 70 ? (
+        <p className="avisos">
+          Ojo: solo puedes no presentar el 130 si el año pasado al menos el 70 % de tus ingresos llevaron retención.
+          Según lo que tienes registrado de {Number(hoy().slice(0, 4)) - 1}, fue el {retenidoAnterior.toLocaleString('es-ES')} %
+          (las facturas a clientes extranjeros y a particulares no llevan retención). Si no llegas al 70 %, Hacienda puede pedirte los 130 que faltan y multarte por no presentarlos.
+        </p>
+      ) : null}
       <p className="nota">
         Régimen: estimación directa simplificada · IVA régimen general · Comunidad de Madrid.
         {retencion ? ` Retención que aplican hoy tus clientes en actividades profesionales: ${retencion}%.` : ''}

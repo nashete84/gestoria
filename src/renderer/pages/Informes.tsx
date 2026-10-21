@@ -88,7 +88,7 @@ function PrevisionIngresos({ ejercicio }: { ejercicio: number }) {
           nota={cerrado ? undefined : `${euros(p.ingresosReales)} ya registrados + ${euros(p.ingresosPrevistos)} previstos`} />
         {!cerrado ? <Cifra titulo="Ritmo mensual" valor={euros(p.mediaIngresos)} nota={`Media de los últimos ${p.mesesBase} meses completos`} /> : null}
         <Cifra titulo="IRPF del año" valor={euros(s.irpf)} nota={`Tipo medio ${s.estimacion.tipoMedio.toLocaleString('es-ES')} %`} />
-        <Cifra titulo="IRPF que falta por pagar" valor={euros(p.irpfPendiente)} nota="En los próximos 130 y en la renta" />
+        <Cifra titulo="IRPF que falta por pagar" valor={euros(p.irpfPendiente)} nota={p.presenta130 ? 'En los próximos 130 y en la renta' : 'En la renta de junio (no presentas el 130)'} />
         <Cifra titulo="Te quedará tras gastos e IRPF" valor={euros(s.neto)} nota={`Gastos deducibles previstos: ${euros(p.gastosAnio)}`} />
       </div>
       <GraficoColumnas titulo={`Ingresos por mes, ${ejercicio}`} categorias={MESES}
