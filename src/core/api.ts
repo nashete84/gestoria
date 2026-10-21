@@ -1,5 +1,6 @@
 // Contrato entre la interfaz (renderer) y el proceso principal.
 import type { ObligacionConEstado, Presentacion, PresentacionNueva } from './calendario'
+import type { DetalleFactura, Factura } from './db/facturas'
 import type { Resumen } from './db/repos'
 import type {
   Adjunto, Cliente, ClienteNuevo, Gasto, GastoNuevo, Ingreso, IngresoNuevo, Perfil
@@ -38,6 +39,17 @@ export interface ApiGestoria {
   calendarioFiscal(hoy: string): Promise<Resultado<ObligacionConEstado[]>>
   registrarPresentacion(p: PresentacionNueva): Promise<Resultado<Presentacion>>
   borrarPresentacion(id: number): Promise<Resultado<void>>
+
+  /** Emite la factura de un ingreso y genera su registro VERI*FACTU (no lo envía). */
+  listarFacturas(desde: string, hasta: string): Promise<Resultado<Factura[]>>
+  emitirFactura(ingresoId: number): Promise<Resultado<Factura>>
+  detalleFactura(facturaId: number): Promise<Resultado<DetalleFactura>>
+  /** Genera el PDF, pregunta dónde guardarlo y lo abre. Devuelve la ruta o null si se cancela. */
+  guardarPdfFactura(facturaId: number): Promise<Resultado<string | null>>
+  /** XML de la petición que se enviaría a la AEAT. */
+  xmlVerifactu(facturaId: number): Promise<Resultado<string>>
+  anularFactura(facturaId: number): Promise<Resultado<Factura>>
+  enviarVerifactu(facturaId: number): Promise<Resultado<void>>
   /** Muestra la carpeta donde están la base de datos y los adjuntos (para copias de seguridad). */
   abrirCarpetaDatos(): Promise<Resultado<void>>
 }
@@ -48,5 +60,7 @@ export const METODOS_API = [
   'listarIngresos', 'crearIngreso', 'actualizarIngreso', 'borrarIngreso',
   'listarGastos', 'crearGasto', 'actualizarGasto', 'borrarGasto',
   'listarAdjuntos', 'adjuntar', 'abrirAdjunto', 'borrarAdjunto',
-  'resumen', 'calendarioFiscal', 'registrarPresentacion', 'borrarPresentacion', 'abrirCarpetaDatos'
+  'resumen', 'calendarioFiscal', 'registrarPresentacion', 'borrarPresentacion',
+  'listarFacturas', 'emitirFactura', 'detalleFactura', 'guardarPdfFactura', 'xmlVerifactu', 'anularFactura', 'enviarVerifactu',
+  'abrirCarpetaDatos'
 ] as const satisfies readonly (keyof ApiGestoria)[]

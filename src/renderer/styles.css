@@ -77,3 +77,9 @@ nav button { display: flex; align-items: center; justify-content: space-between;
 .etiqueta { margin-left: 8px; font-size: 11px; padding: 1px 8px; border-radius: 99px; background: var(--acento-suave); color: var(--acento); }
 .marcar { grid-column: 1 / -1; border-top: 1px solid var(--borde); padding-top: 12px; }
 a { color: var(--acento); }
+.factura-panel { margin-top: 16px; border-top: 1px solid var(--borde); padding-top: 12px; }
+.factura-cabecera { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.factura-cabecera .acciones { margin-top: 0; }
+.etiqueta.peligro { background: var(--error); color: var(--peligro); }
+table.registros { margin-top: 8px; font-size: 12px; }
+pre.xml { background: var(--fondo); border: 1px solid var(--borde); border-radius: 6px; padding: 12px; font-size: 11px; max-height: 360px; overflow: auto; white-space: pre; }

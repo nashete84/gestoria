@@ -1,10 +1,14 @@
 import Database from 'better-sqlite3'
 import { app, BrowserWindow, dialog, ipcMain, Notification, shell } from 'electron'
+import { writeFile } from 'node:fs/promises'
 import { join, resolve, sep } from 'node:path'
 import type { ApiGestoria, Resultado } from '../core/api'
+import * as facturas from '../core/db/facturas'
 import * as repos from '../core/db/repos'
+import { ENVIO_HABILITADO } from '../core/verifactu'
 import { migrar } from '../core/db/schema'
 import { copiarAdjunto, eliminarArchivo } from './adjuntos'
+import { generarPdf } from './pdf'
 
 let db: Database.Database
 let ventana: BrowserWindow | null = null
@@ -118,6 +122,33 @@ const handlers: Handlers = {
   calendarioFiscal: (hoy) => repos.calendarioFiscal(db, fechaValida(hoy)),
   registrarPresentacion: (p) => repos.registrarPresentacion(db, p),
   borrarPresentacion: (i) => repos.borrarPresentacion(db, id(i)),
+
+  listarFacturas: (d, h) => facturas.listarFacturas(db, d, h),
+  emitirFactura: (i) => facturas.emitirFactura(db, id(i), hoyLocal()),
+  detalleFactura: (i) => {
+    const d = facturas.detalleFactura(db, id(i))
+    if (!d) throw new repos.ErrorValidacion(['La factura no existe.'])
+    return d
+  },
+  guardarPdfFactura: async (i) => {
+    const d = facturas.detalleFactura(db, id(i))
+    if (!d) throw new repos.ErrorValidacion(['La factura no existe.'])
+    const pdf = await generarPdf(d)
+    const r = await dialog.showSaveDialog(ventana!, {
+      title: 'Guardar factura', defaultPath: `Factura ${d.factura.numSerie}.pdf`, filters: [{ name: 'PDF', extensions: ['pdf'] }]
+    })
+    if (r.canceled || !r.filePath) return null
+    await writeFile(r.filePath, pdf)
+    await shell.openPath(r.filePath)
+    return r.filePath
+  },
+  xmlVerifactu: (i) => facturas.xmlEnvio(db, id(i)),
+  anularFactura: (i) => facturas.anularFactura(db, id(i)),
+  enviarVerifactu: () => {
+    // Bloqueado a petición de Nacho: no se envía nada a la AEAT hasta que lo autorice.
+    if (!ENVIO_HABILITADO) throw new repos.ErrorValidacion(['El envío a VERI*FACTU está desactivado mientras pruebas la aplicación.'])
+    throw new repos.ErrorValidacion(['El envío a VERI*FACTU aún no está implementado.'])
+  },
   abrirCarpetaDatos: async () => {
     await shell.openPath(carpetaDatos())
   }

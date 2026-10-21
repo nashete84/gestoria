@@ -53,3 +53,25 @@
 **Aviso al abrir la app** con una notificación del sistema si hay modelos vencidos o que vencen en 10 días, y un contador en la pestaña. Descartado: notificaciones con la app cerrada, que exigiría un proceso en segundo plano.
 
 **Presentaciones únicas por modelo y periodo.** Una complementaria o sustitutiva se registrará en el paso 3, cuando la app genere los modelos.
+
+## Facturas y VERI*FACTU, sin envío (2026-10-21)
+
+**Nada se envía a la AEAT.** Nacho pidió que no se envíe nada hasta que lo autorice. `ENVIO_HABILITADO = false` en `src/core/verifactu.ts` y el botón "Enviar a VERI*FACTU" queda desactivado; un test falla si alguien lo activa sin cambiarlo a propósito. El cliente SOAP con certificado se escribirá cuando lo autorice.
+
+**Entorno de prueba con serie y cadena propias.** Las facturas se numeran `PRUEBA-AAAA-NNNN`, el PDF lleva la marca "PRUEBA · NO ENVIADA A LA AEAT" y el QR apunta al validador de pruebas. Al pasar a producción, la serie será `AAAA-NNNN` y la cadena de huellas empezará de cero. Descartado: usar la serie real durante las pruebas, que obligaría a anular facturas reales.
+
+**La factura sale de un ingreso.** "Emitir factura" numera el ingreso, guarda una copia fija de emisor y cliente y genera el registro de alta. Una línea por factura (la del ingreso). Descartado por ahora: facturas de varias líneas, que exigen cambiar el modelo de ingresos.
+
+**Borrar una factura = anularla.** En VERI*FACTU las facturas no se borran: se genera un registro de anulación encadenado, la factura queda como "anulada" (con su PDF) y se borra el ingreso. El aviso explica que la anulación es para facturas emitidas por error; si la operación existió, corresponde una rectificativa (pendiente).
+
+**Registros inmutables.** Triggers de SQLite impiden modificar o borrar `registros_verifactu`. La huella es SHA-256 en hexadecimal mayúsculas sobre `IDEmisorFactura=…&NumSerieFactura=…&FechaExpedicionFactura=DD-MM-AAAA&TipoFactura=…&CuotaTotal=…&ImporteTotal=…&Huella=<anterior>&FechaHoraHusoGenRegistro=…` (anulación: con los campos `…Anulada`, sin tipo ni importes).
+
+**Calificación del IVA:** nacional S1; servicios a empresas UE y fuera de la UE N2 (no sujeta por reglas de localización), con la mención de inversión del sujeto pasivo en la factura UE.
+
+**Supuestos sin confirmar con la especificación oficial** (el servidor de la AEAT no era accesible desde el entorno de desarrollo; se tomaron de la descripción de servicios web y de documentación de terceros):
+- `ImporteTotal` = base + IVA, sin restar la retención de IRPF.
+- Destinatario extranjero: `IDType` 02 (NIF-IVA) para empresas UE y 06 para el resto.
+- `Impuesto` 01 y `ClaveRegimen` 01 en todas las líneas.
+Hay que validar el XML contra los XSD oficiales antes de activar el envío.
+
+**PDF con Electron (`printToPDF`) en una ventana oculta sin JavaScript.** Sin dependencias extra salvo `qrcode` (nivel de corrección M). QR arriba a la izquierda con "QR tributario:" y "VERI*FACTU", como pide la AEAT.

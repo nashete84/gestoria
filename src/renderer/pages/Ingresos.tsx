@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
 import { calcularIngreso, sugerirFiscalidadIngreso, TIPOS_IVA } from '../../core/fiscalidad'
+import type { Factura } from '../../core/db/facturas'
 import type { Cliente, Ingreso, IngresoNuevo, OperacionIngreso, Perfil } from '../../core/tipos'
 import { api, llamar, mensajes } from '../api'
+import { FacturaPanel } from './FacturaPanel'
 import {
   Adjuntos, Avisos, Campo, CampoEuros, CampoPct, Errores, euros, hoy, periodoActual, rango, SelectorPeriodo, type Periodo
 } from '../componentes'
@@ -20,13 +22,30 @@ export function PaginaIngresos({ perfil }: { perfil: Perfil }) {
   const [periodo, setPeriodo] = useState<Periodo>(periodoActual())
   const [ingresos, setIngresos] = useState<Ingreso[]>([])
   const [clientes, setClientes] = useState<Cliente[]>([])
-  const [editando, setEditando] = useState<{ id: number | null; datos: IngresoNuevo; desdeFactura: boolean } | null>(null)
+  const [editando, setEditando] = useState<{ id: number | null; datos: IngresoNuevo; facturaId: number | null } | null>(null)
+  const [facturas, setFacturas] = useState<Factura[]>([])
   const [avisos, setAvisos] = useState<string[]>([])
   const [errores, setErrores] = useState<string[]>([])
 
   const cargar = () => {
     const { desde, hasta } = rango(periodo)
-    return llamar(api.listarIngresos(desde, hasta)).then(setIngresos).catch((e) => setErrores(mensajes(e)))
+    return Promise.all([
+      llamar(api.listarIngresos(desde, hasta)).then(setIngresos),
+      llamar(api.listarFacturas(desde, hasta)).then(setFacturas)
+    ]).catch((e) => setErrores(mensajes(e)))
+  }
+
+  const emitir = async () => {
+    if (!editando?.id) return
+    if (!confirm('¿Emitir la factura de este ingreso?\n\nSe le asignará número y se generará su registro VERI*FACTU. Después no podrás modificar el ingreso; solo anular la factura.')) return
+    try {
+      const f = await llamar(api.emitirFactura(editando.id))
+      setEditando({ ...editando, facturaId: f.id })
+      setErrores([])
+      await cargar()
+    } catch (e) {
+      setErrores(mensajes(e))
+    }
   }
   useEffect(() => { void cargar() }, [periodo])
   useEffect(() => { llamar(api.listarClientes()).then(setClientes).catch((e) => setErrores(mensajes(e))) }, [])
@@ -75,7 +94,7 @@ export function PaginaIngresos({ perfil }: { perfil: Perfil }) {
       <div className="cabecera">
         <h1>Ingresos</h1>
         <SelectorPeriodo periodo={periodo} onChange={setPeriodo} />
-        <button onClick={() => { setEditando({ id: null, datos: nuevo(), desdeFactura: false }); setAvisos([]); setErrores([]) }}>Nuevo ingreso</button>
+        <button onClick={() => { setEditando({ id: null, datos: nuevo(), facturaId: null }); setAvisos([]); setErrores([]) }}>Nuevo ingreso</button>
       </div>
       <Errores errores={errores} />
 
@@ -113,16 +132,20 @@ export function PaginaIngresos({ perfil }: { perfil: Perfil }) {
               IVA {euros(cuotas.cuotaIva)} · Retención −{euros(cuotas.cuotaRetencion)} · Total a cobrar {euros(d.base + cuotas.cuotaIva - cuotas.cuotaRetencion)}
             </p>
           ) : null}
-          {editando.id !== null ? <Adjuntos entidad="ingreso" id={editando.id} /> : <p className="nota">Guarda el ingreso para poder adjuntar justificantes.</p>}
+          {editando.id !== null ? <Adjuntos entidad="ingreso" id={editando.id} /> : <p className="nota">Guarda el ingreso para poder adjuntar justificantes y emitir la factura.</p>}
+          {editando.facturaId !== null ? (
+            <FacturaPanel facturaId={editando.facturaId} onAnulada={() => { setEditando(null); void cargar() }} />
+          ) : null}
           <div className="acciones">
-            <button onClick={guardar} disabled={editando.desdeFactura}>Guardar</button>
-            <button className="secundario" onClick={() => setEditando(null)}>Cancelar</button>
+            {editando.facturaId === null ? <button onClick={guardar}>Guardar</button> : null}
+            {editando.id !== null && editando.facturaId === null ? <button className="secundario" onClick={emitir}>Emitir factura</button> : null}
+            <button className="secundario" onClick={() => setEditando(null)}>{editando.facturaId === null ? 'Cancelar' : 'Cerrar'}</button>
           </div>
         </div>
       ) : null}
 
       <table>
-        <thead><tr><th>Fecha</th><th>Cliente</th><th>Concepto</th><th>Operación</th><th className="num">Base</th><th className="num">IVA</th><th className="num">Retención</th><th /></tr></thead>
+        <thead><tr><th>Fecha</th><th>Cliente</th><th>Concepto</th><th>Operación</th><th>Factura</th><th className="num">Base</th><th className="num">IVA</th><th className="num">Retención</th><th /></tr></thead>
         <tbody>
           {ingresos.map((i) => (
             <tr key={i.id}>
@@ -130,22 +153,40 @@ export function PaginaIngresos({ perfil }: { perfil: Perfil }) {
               <td>{nombreCliente(i.clienteId)}</td>
               <td>{i.concepto}</td>
               <td>{OPERACIONES[i.operacion]}</td>
+              <td>{facturas.find((f) => f.id === i.facturaId)?.numSerie ?? '—'}</td>
               <td className="num">{euros(i.base)}</td>
               <td className="num">{euros(i.cuotaIva)}</td>
               <td className="num">{euros(i.cuotaRetencion)}</td>
               <td className="derecha">
                 <button className="secundario" onClick={() => {
                   const { id, cuotaIva: _a, cuotaRetencion: _b, facturaId, ...datos } = i
-                  setEditando({ id, datos, desdeFactura: facturaId !== null }); setAvisos([])
+                  setEditando({ id, datos, facturaId }); setAvisos([])
                 }}>{i.facturaId ? 'Ver' : 'Editar'}</button>
                 {i.facturaId ? null : <button className="peligro" onClick={() => borrar(i)}>Borrar</button>}
               </td>
             </tr>
           ))}
-          {!ingresos.length ? <tr><td colSpan={8} className="vacio">No hay ingresos en este periodo.</td></tr> : null}
+          {!ingresos.length ? <tr><td colSpan={9} className="vacio">No hay ingresos en este periodo.</td></tr> : null}
         </tbody>
-        <tfoot><tr><td colSpan={4}>Total</td><td className="num">{euros(total('base'))}</td><td className="num">{euros(total('cuotaIva'))}</td><td className="num">{euros(total('cuotaRetencion'))}</td><td /></tr></tfoot>
+        <tfoot><tr><td colSpan={5}>Total</td><td className="num">{euros(total('base'))}</td><td className="num">{euros(total('cuotaIva'))}</td><td className="num">{euros(total('cuotaRetencion'))}</td><td /></tr></tfoot>
       </table>
+
+      {facturas.some((f) => f.estado === 'anulada') ? (
+        <>
+          <h2>Facturas anuladas</h2>
+          <table>
+            <thead><tr><th>Número</th><th>Fecha</th><th>Cliente</th><th className="num">Base</th><th /></tr></thead>
+            <tbody>
+              {facturas.filter((f) => f.estado === 'anulada').map((f) => (
+                <tr key={f.id}>
+                  <td>{f.numSerie}</td><td>{f.fechaExpedicion}</td><td>{f.cliente.nombre}</td><td className="num">{euros(f.base)}</td>
+                  <td className="derecha"><button className="secundario" onClick={() => llamar(api.guardarPdfFactura(f.id)).catch((e) => setErrores(mensajes(e)))}>PDF</button></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </>
+      ) : null}
     </section>
   )
 }

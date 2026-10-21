@@ -85,6 +85,55 @@ const MIGRACIONES: string[] = [
     notas TEXT NOT NULL DEFAULT '',
     UNIQUE (modelo, ejercicio, periodo)
   );
+  `,
+  `
+  CREATE TABLE facturas (
+    id INTEGER PRIMARY KEY,
+    entorno TEXT NOT NULL CHECK (entorno IN ('prueba', 'produccion')),
+    serie TEXT NOT NULL,
+    numero INTEGER NOT NULL,
+    num_serie TEXT NOT NULL UNIQUE,
+    fecha_expedicion TEXT NOT NULL,
+    ingreso_id INTEGER REFERENCES ingresos(id) ON DELETE SET NULL,
+    tipo TEXT NOT NULL DEFAULT 'F1',
+    emisor TEXT NOT NULL,
+    cliente TEXT NOT NULL,
+    concepto TEXT NOT NULL,
+    base INTEGER NOT NULL,
+    tipo_iva REAL NOT NULL,
+    cuota_iva INTEGER NOT NULL,
+    retencion_pct REAL NOT NULL,
+    cuota_retencion INTEGER NOT NULL,
+    operacion TEXT NOT NULL,
+    estado TEXT NOT NULL DEFAULT 'emitida' CHECK (estado IN ('emitida', 'anulada')),
+    creada TEXT NOT NULL DEFAULT (datetime('now')),
+    UNIQUE (serie, numero)
+  );
+
+  -- Registros de facturación VERI*FACTU. Nunca se modifican ni se borran: forman una cadena.
+  CREATE TABLE registros_verifactu (
+    id INTEGER PRIMARY KEY,
+    entorno TEXT NOT NULL CHECK (entorno IN ('prueba', 'produccion')),
+    tipo TEXT NOT NULL CHECK (tipo IN ('alta', 'anulacion')),
+    factura_id INTEGER NOT NULL REFERENCES facturas(id),
+    id_emisor TEXT NOT NULL,
+    num_serie TEXT NOT NULL,
+    fecha_expedicion TEXT NOT NULL,
+    fecha_hora_huso TEXT NOT NULL,
+    huella TEXT NOT NULL,
+    huella_anterior TEXT,
+    xml TEXT NOT NULL,
+    estado_envio TEXT NOT NULL DEFAULT 'pendiente' CHECK (estado_envio IN ('pendiente', 'correcto', 'aceptado_con_errores', 'incorrecto')),
+    csv TEXT,
+    error TEXT
+  );
+  CREATE INDEX registros_factura ON registros_verifactu(factura_id);
+
+  CREATE TRIGGER registros_inmutables BEFORE UPDATE OF tipo, factura_id, id_emisor, num_serie, fecha_expedicion,
+    fecha_hora_huso, huella, huella_anterior, xml ON registros_verifactu
+  BEGIN SELECT RAISE(ABORT, 'Los registros de facturación no se pueden modificar'); END;
+  CREATE TRIGGER registros_sin_borrado BEFORE DELETE ON registros_verifactu
+  BEGIN SELECT RAISE(ABORT, 'Los registros de facturación no se pueden borrar'); END;
   `
 ]
 
