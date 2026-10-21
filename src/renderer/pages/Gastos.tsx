@@ -29,7 +29,7 @@ function deCategoria(perfil: Perfil, id: string, base: Partial<GastoNuevo> = {})
 export function PaginaGastos({ perfil }: { perfil: Perfil }) {
   const [periodo, setPeriodo] = useState<Periodo>(periodoActual())
   const [gastos, setGastos] = useState<Gasto[]>([])
-  const [editando, setEditando] = useState<{ id: number | null; datos: GastoNuevo } | null>(null)
+  const [editando, setEditando] = useState<{ id: number | null; datos: GastoNuevo; copiaDe?: string; clave?: number } | null>(null)
   const [errores, setErrores] = useState<string[]>([])
   const [pendientes, setPendientes] = useState<ArchivoElegido[]>([])
 
@@ -86,7 +86,8 @@ export function PaginaGastos({ perfil }: { perfil: Perfil }) {
       <Errores errores={errores} />
 
       {d ? (
-        <div className="tarjeta" key={editando.id ?? 'nuevo'}>
+        <div className="tarjeta" key={editando.id ?? `nuevo-${editando.clave ?? 0}`}>
+          {editando.copiaDe ? <p className="nota">Copia de "{editando.copiaDe}". Cambia la fecha (y lo que haga falta) y guarda.</p> : null}
           <div className="rejilla">
             {perfil.actividades.length > 1 ? (
               <Campo etiqueta="Actividad">
@@ -101,7 +102,7 @@ export function PaginaGastos({ perfil }: { perfil: Perfil }) {
                 {CATEGORIAS_GASTO.map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
               </select>
             </Campo>
-            <Campo etiqueta="Fecha"><input type="date" value={d.fecha} onChange={(e) => set({ fecha: e.target.value })} /></Campo>
+            <Campo etiqueta="Fecha"><input type="date" value={d.fecha} autoFocus={!!editando.copiaDe} onChange={(e) => set({ fecha: e.target.value })} /></Campo>
             <Campo etiqueta="Proveedor"><input value={d.proveedor} onChange={(e) => set({ proveedor: e.target.value })} /></Campo>
             <Campo etiqueta="NIF del proveedor"><input value={d.nifProveedor} onChange={(e) => set({ nifProveedor: e.target.value })} /></Campo>
             <Campo etiqueta="País del proveedor"><input value={d.paisProveedor} maxLength={2} onChange={(e) => set({ paisProveedor: e.target.value.toUpperCase() })} /></Campo>
@@ -165,6 +166,11 @@ export function PaginaGastos({ perfil }: { perfil: Perfil }) {
               <td className="num">{euros(g.cuotaIva)}</td>
               <td className="derecha">
                 <button className="secundario" onClick={() => { const { id, cuotaIva: _a, cuotaRetencion: _b, ...datos } = g; setEditando({ id, datos }) }}>Editar</button>
+                <button className="secundario" title="Crea un gasto nuevo igual, con la fecha que elijas" onClick={() => {
+                  const { id: _id, cuotaIva: _a, cuotaRetencion: _b, ...datos } = g
+                  setEditando({ id: null, datos: { ...datos, fecha: hoy(), numeroFactura: '' }, copiaDe: g.concepto || g.proveedor || 'gasto', clave: Date.now() })
+                  setPendientes([]); setErrores([])
+                }}>Duplicar</button>
                 <button className="peligro" onClick={() => borrar(g)}>Borrar</button>
               </td>
             </tr>

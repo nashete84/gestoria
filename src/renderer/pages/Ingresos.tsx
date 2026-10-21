@@ -22,7 +22,7 @@ export function PaginaIngresos({ perfil }: { perfil: Perfil }) {
   const [periodo, setPeriodo] = useState<Periodo>(periodoActual())
   const [ingresos, setIngresos] = useState<Ingreso[]>([])
   const [clientes, setClientes] = useState<Cliente[]>([])
-  const [editando, setEditando] = useState<{ id: number | null; datos: IngresoNuevo; facturaId: number | null } | null>(null)
+  const [editando, setEditando] = useState<{ id: number | null; datos: IngresoNuevo; facturaId: number | null; copiaDe?: string; clave?: number } | null>(null)
   const [facturas, setFacturas] = useState<Factura[]>([])
   const [avisos, setAvisos] = useState<string[]>([])
   const [errores, setErrores] = useState<string[]>([])
@@ -123,9 +123,10 @@ export function PaginaIngresos({ perfil }: { perfil: Perfil }) {
       <Errores errores={errores} />
 
       {d ? (
-        <div className="tarjeta" key={editando.id ?? "nuevo"}>
+        <div className="tarjeta" key={editando.id ?? `nuevo-${editando.clave ?? 0}`}>
+          {editando.copiaDe ? <p className="nota">Copia de "{editando.copiaDe}". Cambia la fecha (y lo que haga falta) y guarda.</p> : null}
           <div className="rejilla">
-            <Campo etiqueta="Fecha"><input type="date" value={d.fecha} onChange={(e) => set({ fecha: e.target.value })} /></Campo>
+            <Campo etiqueta="Fecha"><input type="date" value={d.fecha} autoFocus={!!editando.copiaDe} onChange={(e) => set({ fecha: e.target.value })} /></Campo>
             {perfil.actividades.length > 1 ? (
               <Campo etiqueta="Actividad">
                 <select value={d.actividadId ?? ''} onChange={(e) => sugerir(d.clienteId, e.target.value || null)}>
@@ -209,6 +210,11 @@ export function PaginaIngresos({ perfil }: { perfil: Perfil }) {
                   const { id, cuotaIva: _a, cuotaRetencion: _b, facturaId, ...datos } = i
                   setEditando({ id, datos, facturaId }); setAvisos([])
                 }}>{i.facturaId ? 'Ver' : 'Editar'}</button>
+                <button className="secundario" title="Crea un ingreso nuevo igual, con la fecha que elijas" onClick={() => {
+                  const { id: _id, cuotaIva: _a, cuotaRetencion: _b, facturaId: _f, ...datos } = i
+                  setEditando({ id: null, datos: { ...datos, fecha: hoy() }, facturaId: null, copiaDe: i.concepto || 'ingreso', clave: Date.now() })
+                  setAvisos([]); setErrores([])
+                }}>Duplicar</button>
                 {i.facturaId ? null : <button className="peligro" onClick={() => borrar(i)}>Borrar</button>}
               </td>
             </tr>
