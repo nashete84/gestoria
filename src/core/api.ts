@@ -4,6 +4,8 @@ import type { DetalleFactura, Factura } from './db/facturas'
 import type { Resumen } from './db/repos'
 import type { VistaRenta } from './db/renta'
 import type { AjustesModelos, ResultadoModelo } from './modelos/tipos'
+import type { EstadoAsistente, EventoAsistente, InfoModeloAsistente, RespuestaAsistente } from './asistente/servicio'
+import type { MensajeChat } from './asistente/prompt'
 import type { Modelo, Periodo } from './calendario'
 import type { DatosRenta } from './renta/calculo'
 import type {
@@ -73,7 +75,24 @@ export interface ApiGestoria {
   guardarAjustesModelos(ejercicio: number, a: AjustesModelos): Promise<Resultado<AjustesModelos>>
   /** Muestra la carpeta donde están la base de datos y los adjuntos (para copias de seguridad). */
   abrirCarpetaDatos(): Promise<Resultado<void>>
+
+  /** Asistente de ayuda local: estado del modelo (descargado o no) y su información. */
+  estadoAsistente(): Promise<Resultado<{ estado: EstadoAsistente; modelo: InfoModeloAsistente }>>
+  /** Descarga el modelo (una vez). Termina al acabar o al cancelar; el progreso llega como evento. */
+  descargarModeloAsistente(): Promise<Resultado<EstadoAsistente>>
+  cancelarDescargaAsistente(): Promise<Resultado<void>>
+  /** Responde una duda general; los trozos de la respuesta llegan como eventos con el mismo id. */
+  preguntarAsistente(id: string, pregunta: string, historial: MensajeChat[]): Promise<Resultado<RespuestaAsistente>>
+  cancelarPreguntaAsistente(id: string): Promise<Resultado<void>>
 }
+
+/** Eventos que el proceso principal envía a la interfaz. */
+export interface EventosGestoria {
+  /** Devuelve la función para dejar de escuchar. */
+  alAsistente(cb: (e: EventoAsistente) => void): () => void
+}
+
+export const CANAL_ASISTENTE = 'gestoria-evento:asistente'
 
 export const METODOS_API = [
   'leerPerfil', 'guardarPerfil',
@@ -85,5 +104,6 @@ export const METODOS_API = [
   'listarFacturas', 'vistaPreviaFactura', 'guardarPdfBorrador', 'emitirFactura', 'detalleFactura', 'guardarPdfFactura', 'xmlVerifactu', 'anularFactura', 'enviarVerifactu',
   'estimacionRenta', 'guardarDatosRenta',
   'calcularModelo', 'guardarFicheroModelo', 'leerAjustesModelos', 'guardarAjustesModelos',
-  'abrirCarpetaDatos'
+  'abrirCarpetaDatos',
+  'estadoAsistente', 'descargarModeloAsistente', 'cancelarDescargaAsistente', 'preguntarAsistente', 'cancelarPreguntaAsistente'
 ] as const satisfies readonly (keyof ApiGestoria)[]

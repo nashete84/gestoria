@@ -13,6 +13,9 @@ import { ENVIO_HABILITADO } from '../core/verifactu'
 import { migrar } from '../core/db/schema'
 import { copiarAdjunto, eliminarArchivo } from './adjuntos'
 import { generarPdf } from './pdf'
+import { MotorLocal } from './motorLocal'
+import { responder, validarConversacion } from '../core/asistente/servicio'
+import { CANAL_ASISTENTE } from '../core/api'
 
 let db: Database.Database
 let ventana: BrowserWindow | null = null
@@ -20,6 +23,14 @@ let ventana: BrowserWindow | null = null
 function carpetaDatos() {
   return app.getPath('userData')
 }
+let motor: MotorLocal | null = null
+function asistente(): MotorLocal {
+  motor ??= new MotorLocal(join(carpetaDatos(), 'modelos'), (estado) => ventana?.webContents.send(CANAL_ASISTENTE, { tipo: 'estado', estado }))
+  return motor
+}
+/** Preguntas en curso, para poder cancelarlas. */
+const preguntas = new Map<string, AbortController>()
+
 function carpetaAdjuntos() {
   return join(carpetaDatos(), 'adjuntos')
 }
@@ -184,6 +195,25 @@ const handlers: Handlers = {
   guardarAjustesModelos: (ej, a) => modelos.guardarAjustesModelos(db, id(ej), a),
   abrirCarpetaDatos: async () => {
     await shell.openPath(carpetaDatos())
+  },
+  estadoAsistente: async () => ({ estado: asistente().estado(), modelo: asistente().info }),
+  descargarModeloAsistente: () => asistente().descargar(),
+  cancelarDescargaAsistente: () => asistente().cancelarDescarga(),
+  preguntarAsistente: async (idPregunta, pregunta, historial) => {
+    if (typeof idPregunta !== 'string' || !idPregunta) throw new repos.ErrorValidacion(['Pregunta no válida.'])
+    let datos
+    try { datos = validarConversacion(pregunta, historial) } catch (e) { throw new repos.ErrorValidacion([(e as Error).message]) }
+    const control = new AbortController()
+    preguntas.set(idPregunta, control)
+    try {
+      return await responder(asistente(), datos.pregunta, datos.historial,
+        (texto) => ventana?.webContents.send(CANAL_ASISTENTE, { tipo: 'trozo', id: idPregunta, texto }), control.signal)
+    } finally {
+      preguntas.delete(idPregunta)
+    }
+  },
+  cancelarPreguntaAsistente: async (idPregunta) => {
+    preguntas.get(String(idPregunta))?.abort()
   }
 }
 
@@ -270,4 +300,7 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit()
 })
 
-app.on('will-quit', () => db?.close())
+app.on('will-quit', () => {
+  db?.close()
+  void motor?.cerrar()
+})

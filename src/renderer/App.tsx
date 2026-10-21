@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import type { Perfil } from '../core/tipos'
 import { api, llamar, mensajes } from './api'
 import { Errores, hoy } from './componentes'
+import { PaginaAsistente } from './pages/Asistente'
 import { PaginaClientes } from './pages/Clientes'
 import { PaginaGastos } from './pages/Gastos'
 import { PaginaImpuestos } from './pages/Impuestos'
@@ -10,7 +11,7 @@ import { PaginaPerfil } from './pages/Perfil'
 import { PaginaRenta } from './pages/Renta'
 import { PaginaResumen } from './pages/Resumen'
 
-type Pagina = 'resumen' | 'impuestos' | 'renta' | 'ingresos' | 'gastos' | 'clientes' | 'perfil'
+type Pagina = 'resumen' | 'impuestos' | 'renta' | 'ingresos' | 'gastos' | 'clientes' | 'asistente' | 'perfil'
 
 const MENU: { id: Pagina; nombre: string }[] = [
   { id: 'resumen', nombre: 'Resumen' },
@@ -19,6 +20,7 @@ const MENU: { id: Pagina; nombre: string }[] = [
   { id: 'ingresos', nombre: 'Ingresos' },
   { id: 'gastos', nombre: 'Gastos' },
   { id: 'clientes', nombre: 'Clientes' },
+  { id: 'asistente', nombre: 'Asistente' },
   { id: 'perfil', nombre: 'Mi perfil' }
 ]
 
@@ -64,6 +66,7 @@ export function App() {
         {perfil && pagina === 'ingresos' ? <PaginaIngresos perfil={perfil} /> : null}
         {perfil && pagina === 'gastos' ? <PaginaGastos perfil={perfil} /> : null}
         {perfil && pagina === 'clientes' ? <PaginaClientes /> : null}
+        {perfil && pagina === 'asistente' ? <PaginaAsistente /> : null}
       </main>
     </div>
   )

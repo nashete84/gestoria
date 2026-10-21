@@ -26,10 +26,15 @@
       "target": [
         "dmg"
       ]
-    }
+    },
+    "asarUnpack": [
+      "node_modules/node-llama-cpp/**",
+      "node_modules/@node-llama-cpp/**"
+    ]
   },
   "dependencies": {
     "better-sqlite3": "^13.0.3",
+    "node-llama-cpp": "^3.22.2",
     "qrcode": "^1.5.4",
     "react": "^19.3.1",
     "react-dom": "^19.3.1"

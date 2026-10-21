@@ -1,12 +1,14 @@
-import type { ApiGestoria, Resultado } from '../core/api'
+import type { ApiGestoria, EventosGestoria, Resultado } from '../core/api'
 
 declare global {
   interface Window {
     gestoria: ApiGestoria
+    gestoriaEventos: EventosGestoria
   }
 }
 
 export const api = window.gestoria
+export const eventos = window.gestoriaEventos
 
 export class ErrorApi extends Error {
   constructor(public errores: string[]) {

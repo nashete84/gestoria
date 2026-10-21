@@ -156,3 +156,15 @@ Los gastos ya guardados no se recalculan. Descartado: una tabla completa por ep�
 **390 calculado a partir del año y de los cuatro 303.** Devengado y deducible por tipo con la numeración propia del 390; compras intracomunitarias: bienes de inversión como bienes y el resto como servicios (igual que en el 349). 85 = compensación del año anterior aplicada (se gasta antes que la del propio año), 95 = suma de los 303 a ingresar, 97/98 del 4T y 662 = lo generado en el año que queda pendiente fuera del 97; si 86 no cuadra con 95 − 97 − 98 − 662 se avisa. Datos estadísticos: hasta seis actividades del perfil con su epígrafe; clave A05 para profesionales (la que puso la AEAT en el 390 de 2025 de Nacho), A01 para empresariales sin verificar. Sin bloque de representante (no hace falta si presentas tú). Descartado: pedir el 390 a mano como resumen de los 303 presentados.
 
 **Apellidos y nombre por separado en el perfil** (sustituye a "Nombre para Hacienda"): el 130, 111, 115 y 390 los piden en campos distintos. Un perfil antiguo se convierte solo: la última palabra pasa a nombre.
+
+## Asistente de IA (2026-10-21)
+
+**Qué hace:** responde dudas generales de Hacienda y de cómo usar la app, citando la fuente. No ve los datos del usuario y no hace acciones (lo pidió así Nacho). Descartado: darle acceso a los datos y dejarle crear gastos o ingresos.
+
+**Modelo dentro de la app** (elección de Nacho): llama.cpp mediante `node-llama-cpp` (binarios precompilados, Metal en Mac; `build: 'never'` para no compilar nunca) con **Qwen3 4B Instruct 2507** en GGUF Q4_K_M (unsloth, licencia Apache, sin registro), unos 2,5 GB y 8 GB de RAM. Se descarga una vez a la carpeta de datos (`modelos/`) desde la pestaña Asistente, se puede pausar y continúa donde iba. Después funciona sin conexión. Descartados: Ollama aparte (Nacho prefirió no instalar nada más), la API de Claude (sus datos y preguntas saldrían del Mac), meter el modelo en el instalador (pesaría 2,5 GB más en cada actualización) y modelos con modo de razonamiento (más lentos; igualmente se quita cualquier `<think>`).
+
+**Base de conocimiento propia** (`src/core/asistente/conocimiento.ts`): guías de la app y fichas fiscales con su artículo y enlace al BOE o a la Sede. Por cada pregunta, un buscador BM25 (raíces de 4 letras, sin acentos) elige hasta 4 fichas y solo esas van al modelo, con la orden de no salirse de ellas y de citar [n]. La app muestra las fuentes de las fichas citadas, no las que el modelo diga. Así un modelo pequeño no se inventa plazos ni porcentajes, y para cubrir una duda nueva basta añadir una ficha. Descartado: embeddings (otro modelo que descargar, y con 40 fichas no hace falta).
+
+**Límites:** historial de los últimos 4 turnos, respuestas de 700 tokens como máximo, temperatura 0,2, una pregunta cada vez. La conversación no se guarda en disco.
+
+**Sin probar con el modelo real:** la nube no llega a Hugging Face, así que el motor se ha probado cargando llama.cpp (Linux) y la conversación con un motor simulado. Falta la primera prueba en el Mac.
