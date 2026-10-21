@@ -67,6 +67,8 @@ export interface ApiGestoria {
   guardarDatosRenta(ejercicio: number, datos: DatosRenta): Promise<Resultado<VistaRenta>>
   /** Casillas de un modelo calculadas con tus datos. */
   calcularModelo(modelo: Modelo, ejercicio: number, periodo: Periodo): Promise<Resultado<ResultadoModelo>>
+  /** Genera el .txt del modelo y pregunta dónde guardarlo. Devuelve la ruta y los avisos, o null si se cancela. */
+  guardarFicheroModelo(modelo: Modelo, ejercicio: number, periodo: Periodo): Promise<Resultado<{ ruta: string; avisos: string[] } | null>>
   leerAjustesModelos(ejercicio: number): Promise<Resultado<AjustesModelos>>
   guardarAjustesModelos(ejercicio: number, a: AjustesModelos): Promise<Resultado<AjustesModelos>>
   /** Muestra la carpeta donde están la base de datos y los adjuntos (para copias de seguridad). */
@@ -82,6 +84,6 @@ export const METODOS_API = [
   'resumen', 'calendarioFiscal', 'registrarPresentacion', 'borrarPresentacion',
   'listarFacturas', 'vistaPreviaFactura', 'guardarPdfBorrador', 'emitirFactura', 'detalleFactura', 'guardarPdfFactura', 'xmlVerifactu', 'anularFactura', 'enviarVerifactu',
   'estimacionRenta', 'guardarDatosRenta',
-  'calcularModelo', 'leerAjustesModelos', 'guardarAjustesModelos',
+  'calcularModelo', 'guardarFicheroModelo', 'leerAjustesModelos', 'guardarAjustesModelos',
   'abrirCarpetaDatos'
 ] as const satisfies readonly (keyof ApiGestoria)[]

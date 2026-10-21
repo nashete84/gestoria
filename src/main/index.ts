@@ -170,6 +170,16 @@ const handlers: Handlers = {
   estimacionRenta: (ej) => renta.vistaRenta(db, id(ej)),
   guardarDatosRenta: (ej, d) => renta.guardarDatosRenta(db, id(ej), d),
   calcularModelo: (m, ej, p) => modelos.calcularModelo(db, m, id(ej), p),
+  guardarFicheroModelo: async (m, ej, p) => {
+    const f = modelos.ficheroModelo(db, m, id(ej), p)
+    const r = await dialog.showSaveDialog(ventana!, {
+      title: `Guardar fichero del modelo ${m}`, defaultPath: f.nombre, filters: [{ name: 'Texto', extensions: ['txt'] }]
+    })
+    if (r.canceled || !r.filePath) return null
+    // Los ficheros de la AEAT van en ISO-8859-1.
+    await writeFile(r.filePath, Buffer.from(f.contenido, 'latin1'))
+    return { ruta: r.filePath, avisos: f.avisos }
+  },
   leerAjustesModelos: (ej) => modelos.leerAjustesModelos(db, id(ej)),
   guardarAjustesModelos: (ej, a) => modelos.guardarAjustesModelos(db, id(ej), a),
   abrirCarpetaDatos: async () => {

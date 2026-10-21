@@ -7,6 +7,8 @@ import { api, llamar, mensajes } from '../api'
 import { Avisos, Campo, CampoEuros, Errores, euros } from '../componentes'
 
 export const MODELOS_CALCULADOS: Modelo[] = ['303', '130', '111', '115', '349', '347']
+/** Modelos con fichero .txt según el diseño de registro oficial. */
+const CON_FICHERO: Modelo[] = ['349', '347']
 
 const TIPOS: Record<ResultadoModelo['tipo'], string> = {
   ingresar: 'A ingresar', devolver: 'A devolver', compensar: 'A compensar / deducir', cero: 'Resultado cero', negativa: 'Negativa'
@@ -24,6 +26,16 @@ const ordenar = (a: string, b: string) => (Number(a) || 0) - (Number(b) || 0) ||
 export function CasillasModelo({ modelo, ejercicio, periodo }: { modelo: Modelo; ejercicio: number; periodo: Periodo }) {
   const [r, setR] = useState<ResultadoModelo | null>(null)
   const [errores, setErrores] = useState<string[]>([])
+  const [guardado, setGuardado] = useState<string | null>(null)
+
+  const descargar = async () => {
+    try {
+      const f = await llamar(api.guardarFicheroModelo(modelo, ejercicio, periodo))
+      if (f) setGuardado(f.ruta)
+    } catch (e) {
+      setErrores(mensajes(e))
+    }
+  }
 
   useEffect(() => {
     llamar(api.calcularModelo(modelo, ejercicio, periodo)).then(setR).catch((e) => setErrores(mensajes(e)))
@@ -67,7 +79,15 @@ export function CasillasModelo({ modelo, ejercicio, periodo }: { modelo: Modelo;
           ))}</tbody>
         </table>
       ) : null}
-      <p className="nota">Revisa estas casillas con el formulario de la Sede. El fichero .txt para importarlas llegará en cuanto tenga el diseño oficial del modelo.</p>
+      {CON_FICHERO.includes(modelo) ? (
+        <div className="acciones">
+          <button onClick={descargar} disabled={r.sinActividad}>Descargar .txt para la Sede</button>
+          {guardado ? <span className="ok">Guardado en {guardado}</span> : null}
+          {r.sinActividad ? <span className="nota">Sin operaciones no hay que presentarlo.</span> : null}
+        </div>
+      ) : (
+        <p className="nota">Revisa estas casillas con el formulario de la Sede. El fichero .txt llegará cuando tenga el diseño oficial del modelo.</p>
+      )}
     </div>
   )
 }

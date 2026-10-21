@@ -1,6 +1,7 @@
 import type BetterSqlite3 from 'better-sqlite3'
 import type { Modelo, Periodo } from '../calendario'
-import { calcular347, calcular349 } from '../modelos/declarativos'
+import { calcular347, calcular349, type Resultado347, type Resultado349 } from '../modelos/declarativos'
+import { fichero347, fichero349, type Fichero } from '../modelos/ficheros349y347'
 import { calcular130 } from '../modelos/m130'
 import { calcular303 } from '../modelos/m303'
 import { calcular111, calcular115 } from '../modelos/retenciones'
@@ -83,4 +84,15 @@ export function calcularModelo(db: Db, modelo: Modelo, ejercicio: number, period
     case '347': return calcular347(ingresos, gastos, listarClientes(db), ejercicio)
     default: throw new ErrorValidacion([`El cálculo del modelo ${modelo} aún no está disponible.`])
   }
+}
+
+/** Modelos para los que ya se genera el fichero con el diseño de registro oficial. */
+export const MODELOS_CON_FICHERO: Modelo[] = ['349', '347']
+
+export function ficheroModelo(db: Db, modelo: Modelo, ejercicio: number, periodo: Periodo): Fichero {
+  const perfil = leerPerfil(db)!
+  const r = calcularModelo(db, modelo, ejercicio, periodo)
+  if (modelo === '349') return fichero349(perfil, r as Resultado349)
+  if (modelo === '347') return fichero347(perfil, r as Resultado347)
+  throw new ErrorValidacion([`El fichero del modelo ${modelo} aún no está disponible: falta su diseño de registro oficial.`])
 }

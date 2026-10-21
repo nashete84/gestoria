@@ -137,3 +137,12 @@ Los gastos ya guardados no se recalculan. Descartado: una tabla completa por ep�
 - **390**: pendiente de su diseño de registro (numeración de casillas distinta del 303).
 
 **Ajustes manuales por ejercicio** (tabla `modelos_ajustes`, migración 6): saldo a compensar del 303 al empezar el año, devolución o compensación del 4T y rendimiento del año anterior.
+
+## Ficheros .txt de los modelos (2026-10-21)
+
+**349 y 347 con su diseño oficial** (PDF de la AEAT: Anexo Orden HAC/174/2020 y diseño del 347 para 2025 y siguientes). Registros de 500 posiciones en ISO-8859-1, separados por CR+LF (el diseño no dice nada de separadores; es lo habitual en la presentación por fichero). Los tests comprueban las posiciones campo a campo.
+- Número identificativo de la declaración: modelo + ejercicio + periodo + secuencia (13 dígitos).
+- Nombre del declarante: nuevo campo del perfil "Nombre para Hacienda" (apellidos primero); si falta, se usa el nombre y se avisa.
+- 347: los proveedores no tienen provincia en la app; se pone 00 y se avisa para corregirla en la Sede. Descartado de momento: añadir la provincia al gasto.
+
+**303, 130, 111, 115 y 390 pendientes.** La AEAT solo publica sus diseños en Excel, y la red de la nube y la del Mac (desde esta sesión) bloquean la descarga. Descartado: usar diseños antiguos en PDF (2008-2012), que no coinciden con los actuales.

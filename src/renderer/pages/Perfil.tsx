@@ -50,6 +50,9 @@ export function PaginaPerfil({ onGuardado }: { onGuardado: (p: Perfil) => void }
       <div className="rejilla">
         <Campo etiqueta="NIF"><input value={p.nif} onChange={(e) => set('nif', e.target.value)} /></Campo>
         <Campo etiqueta="Nombre y apellidos"><input value={p.nombre} onChange={(e) => set('nombre', e.target.value)} /></Campo>
+        <Campo etiqueta="Nombre para Hacienda" ayuda="Apellidos primero: PRIMER APELLIDO SEGUNDO APELLIDO NOMBRE. Se usa en los ficheros de los modelos.">
+          <input value={p.nombreFiscal ?? ''} placeholder="GARCIA LOPEZ IGNACIO" onChange={(e) => set('nombreFiscal', e.target.value)} />
+        </Campo>
         <Campo etiqueta="Domicilio fiscal"><input value={p.domicilio} onChange={(e) => set('domicilio', e.target.value)} /></Campo>
         <Campo etiqueta="Código postal"><input value={p.codigoPostal} onChange={(e) => set('codigoPostal', e.target.value)} /></Campo>
         <Campo etiqueta="Municipio"><input value={p.municipio} onChange={(e) => set('municipio', e.target.value)} /></Campo>
