@@ -1,0 +1,334 @@
+{
+ "modelo": "115",
+ "fuente": "DR115e15v13.xls",
+ "paginas": {
+  "cabecera": [
+   {
+    "n": 1,
+    "pos": 1,
+    "lon": 2,
+    "tipo": "An",
+    "casilla": null,
+    "constante": null,
+    "desc": "Constante."
+   },
+   {
+    "n": 2,
+    "pos": 3,
+    "lon": 3,
+    "tipo": "An",
+    "casilla": null,
+    "constante": null,
+    "desc": "Modelo"
+   },
+   {
+    "n": 3,
+    "pos": 6,
+    "lon": 1,
+    "tipo": "An",
+    "casilla": null,
+    "constante": null,
+    "desc": "Constante."
+   },
+   {
+    "n": 4,
+    "pos": 7,
+    "lon": 4,
+    "tipo": "An",
+    "casilla": null,
+    "constante": null,
+    "desc": "Ejercicio devengo. (AAAA)"
+   },
+   {
+    "n": 5,
+    "pos": 11,
+    "lon": 2,
+    "tipo": "An",
+    "casilla": null,
+    "constante": null,
+    "desc": "Período. (PP)"
+   },
+   {
+    "n": 6,
+    "pos": 13,
+    "lon": 5,
+    "tipo": "An",
+    "casilla": null,
+    "constante": null,
+    "desc": "Constante."
+   },
+   {
+    "n": 7,
+    "pos": 18,
+    "lon": 5,
+    "tipo": "An",
+    "casilla": null,
+    "constante": null,
+    "desc": "Constante"
+   },
+   {
+    "n": 8,
+    "pos": 23,
+    "lon": 70,
+    "tipo": "An",
+    "casilla": null,
+    "constante": null,
+    "desc": "Reservado para la Administración. Rellenar con blancos"
+   },
+   {
+    "n": 9,
+    "pos": 93,
+    "lon": 4,
+    "tipo": "An",
+    "casilla": null,
+    "constante": null,
+    "desc": "Versión del Programa (Nota 1)"
+   },
+   {
+    "n": 10,
+    "pos": 97,
+    "lon": 4,
+    "tipo": "An",
+    "casilla": null,
+    "constante": null,
+    "desc": "Reservado para la Administración. Rellenar con blancos"
+   },
+   {
+    "n": 11,
+    "pos": 101,
+    "lon": 9,
+    "tipo": "An",
+    "casilla": null,
+    "constante": null,
+    "desc": "NIF Empresa Desarrollo (Nota 1)"
+   },
+   {
+    "n": 12,
+    "pos": 110,
+    "lon": 213,
+    "tipo": "An",
+    "casilla": null,
+    "constante": null,
+    "desc": "Reservado para la Administración. Rellenar con blancos"
+   },
+   {
+    "n": 13,
+    "pos": 323,
+    "lon": 6,
+    "tipo": "An",
+    "casilla": null,
+    "constante": null,
+    "desc": "Constante"
+   },
+   {
+    "n": 14,
+    "pos": 329,
+    "lon": null,
+    "tipo": "An",
+    "casilla": null,
+    "constante": null,
+    "desc": "Contenido del fichero. Aquí se debe incluir el contenido de las páginas correspondientes a la declaración según el formato descrito para cada página en este mis"
+   }
+  ],
+  "01": [
+   {
+    "n": 1,
+    "pos": 1,
+    "lon": 2,
+    "tipo": "An",
+    "casilla": null,
+    "constante": "<T",
+    "desc": "Inicio del identificador de modelo y página"
+   },
+   {
+    "n": 2,
+    "pos": 3,
+    "lon": 3,
+    "tipo": "Num",
+    "casilla": null,
+    "constante": "115",
+    "desc": "Modelo"
+   },
+   {
+    "n": 3,
+    "pos": 6,
+    "lon": 2,
+    "tipo": "Num",
+    "casilla": null,
+    "constante": "01",
+    "desc": "Página"
+   },
+   {
+    "n": 4,
+    "pos": 8,
+    "lon": 4,
+    "tipo": "An",
+    "casilla": null,
+    "constante": "000>",
+    "desc": "Fin de identificador de modelo"
+   },
+   {
+    "n": 5,
+    "pos": 12,
+    "lon": 1,
+    "tipo": "A",
+    "casilla": null,
+    "constante": null,
+    "desc": "Reservado página complementaria"
+   },
+   {
+    "n": 6,
+    "pos": 13,
+    "lon": 1,
+    "tipo": "A",
+    "casilla": null,
+    "constante": null,
+    "desc": "Tipo de declaración"
+   },
+   {
+    "n": 7,
+    "pos": 14,
+    "lon": 9,
+    "tipo": "An",
+    "casilla": null,
+    "constante": null,
+    "desc": "Identificación. Sujeto pasivo. NIF"
+   },
+   {
+    "n": 8,
+    "pos": 23,
+    "lon": 60,
+    "tipo": "An",
+    "casilla": null,
+    "constante": null,
+    "desc": "Identificación. Sujeto pasivo. Razón o denominación social/Apellidos"
+   },
+   {
+    "n": 9,
+    "pos": 83,
+    "lon": 20,
+    "tipo": "An",
+    "casilla": null,
+    "constante": null,
+    "desc": "Identificación. Sujeto pasivo. Nombre"
+   },
+   {
+    "n": 10,
+    "pos": 103,
+    "lon": 4,
+    "tipo": "Num",
+    "casilla": null,
+    "constante": null,
+    "desc": "Identificación. Ejercicio"
+   },
+   {
+    "n": 11,
+    "pos": 107,
+    "lon": 2,
+    "tipo": "An",
+    "casilla": null,
+    "constante": null,
+    "desc": "Identificación. Periodo"
+   },
+   {
+    "n": 12,
+    "pos": 109,
+    "lon": 15,
+    "tipo": "Num",
+    "casilla": "01",
+    "constante": null,
+    "desc": "Retenciones e ingresos a cuenta. Número perceptores [01]"
+   },
+   {
+    "n": 13,
+    "pos": 124,
+    "lon": 17,
+    "tipo": "Num",
+    "casilla": "02",
+    "constante": null,
+    "desc": "Retenciones e ingresos a cuenta. Base retenciones e ingresos a cuenta [02]"
+   },
+   {
+    "n": 14,
+    "pos": 141,
+    "lon": 17,
+    "tipo": "Num",
+    "casilla": "03",
+    "constante": null,
+    "desc": "Retenciones e ingresos a cuenta. Retenciones e ingresos a cuenta [03]"
+   },
+   {
+    "n": 15,
+    "pos": 158,
+    "lon": 17,
+    "tipo": "Num",
+    "casilla": "04",
+    "constante": null,
+    "desc": "Retenciones e ingresos a cuenta. Resultado anteriores declaraciones [04]"
+   },
+   {
+    "n": 16,
+    "pos": 175,
+    "lon": 17,
+    "tipo": "Num",
+    "casilla": "05",
+    "constante": null,
+    "desc": "Retenciones e ingresos a cuenta. Resultado a ingresar [03] - [04]"
+   },
+   {
+    "n": 17,
+    "pos": 192,
+    "lon": 1,
+    "tipo": "An",
+    "casilla": null,
+    "constante": null,
+    "desc": "Declaración complementaria."
+   },
+   {
+    "n": 18,
+    "pos": 193,
+    "lon": 13,
+    "tipo": "An",
+    "casilla": null,
+    "constante": null,
+    "desc": "Número de justificante de la declaración anterior"
+   },
+   {
+    "n": 19,
+    "pos": 206,
+    "lon": 34,
+    "tipo": "An",
+    "casilla": null,
+    "constante": null,
+    "desc": "Domiciliación IBAN"
+   },
+   {
+    "n": 20,
+    "pos": 240,
+    "lon": 236,
+    "tipo": "An",
+    "casilla": null,
+    "constante": null,
+    "desc": "Reservado AEAT"
+   },
+   {
+    "n": 21,
+    "pos": 476,
+    "lon": 13,
+    "tipo": "An",
+    "casilla": null,
+    "constante": null,
+    "desc": "Reservado para la Administración. Sello electronico"
+   },
+   {
+    "n": 22,
+    "pos": 489,
+    "lon": 12,
+    "tipo": "An",
+    "casilla": null,
+    "constante": "</T11501000>",
+    "desc": "Identificador de fin de registro."
+   }
+  ]
+ }
+}

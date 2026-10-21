@@ -6,7 +6,7 @@ import { fichero347, fichero349 } from './ficheros349y347'
 
 /** Posiciones del diseño de registro: desde y hasta, empezando en 1. */
 const pos = (r: string, desde: number, hasta: number) => r.slice(desde - 1, hasta)
-const perfil = { ...perfilBase, nombreFiscal: 'Prueba Núñez Nacho', telefono: '600 11 22 33' }
+const perfil = { ...perfilBase, apellidos: 'Prueba Núñez', nombrePila: 'Nacho', telefono: '600 11 22 33' }
 
 describe('utilidades', () => {
   it('texto en mayúsculas sin acentos, conservando la Ñ', () => {

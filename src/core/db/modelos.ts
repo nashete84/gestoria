@@ -2,8 +2,10 @@ import type BetterSqlite3 from 'better-sqlite3'
 import type { Modelo, Periodo } from '../calendario'
 import { calcular347, calcular349, type Resultado347, type Resultado349 } from '../modelos/declarativos'
 import { fichero347, fichero349, type Fichero } from '../modelos/ficheros349y347'
+import { fichero111, fichero115, fichero130, fichero303, fichero390 } from '../modelos/ficherosAutoliquidacion'
 import { calcular130 } from '../modelos/m130'
 import { calcular303 } from '../modelos/m303'
+import { calcular390 } from '../modelos/m390'
 import { calcular111, calcular115 } from '../modelos/retenciones'
 import { AJUSTES_VACIOS, TRIMESTRES, type AjustesModelos, type ResultadoModelo } from '../modelos/tipos'
 import type { Trimestre } from '../periodos'
@@ -82,17 +84,23 @@ export function calcularModelo(db: Db, modelo: Modelo, ejercicio: number, period
     case '115': return calcular115(gastos, ejercicio, trimestre)
     case '349': return calcular349(ingresos, gastos, listarClientes(db), ejercicio, trimestre)
     case '347': return calcular347(ingresos, gastos, listarClientes(db), ejercicio)
+    case '390': return calcular390({ ejercicio, ingresos, gastos, ajustes })
     default: throw new ErrorValidacion([`El cálculo del modelo ${modelo} aún no está disponible.`])
   }
 }
 
 /** Modelos para los que ya se genera el fichero con el diseño de registro oficial. */
-export const MODELOS_CON_FICHERO: Modelo[] = ['349', '347']
+export const MODELOS_CON_FICHERO: Modelo[] = ['303', '130', '111', '115', '349', '390', '347']
 
 export function ficheroModelo(db: Db, modelo: Modelo, ejercicio: number, periodo: Periodo): Fichero {
   const perfil = leerPerfil(db)!
   const r = calcularModelo(db, modelo, ejercicio, periodo)
   if (modelo === '349') return fichero349(perfil, r as Resultado349)
   if (modelo === '347') return fichero347(perfil, r as Resultado347)
+  if (modelo === '303') return fichero303(perfil, r)
+  if (modelo === '130') return fichero130(perfil, r)
+  if (modelo === '111') return fichero111(perfil, r)
+  if (modelo === '115') return fichero115(perfil, r)
+  if (modelo === '390') return fichero390(perfil, r)
   throw new ErrorValidacion([`El fichero del modelo ${modelo} aún no está disponible: falta su diseño de registro oficial.`])
 }

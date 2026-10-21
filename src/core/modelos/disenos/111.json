@@ -1,0 +1,568 @@
+{
+ "modelo": "111",
+ "fuente": "dr111e16v18.xls",
+ "paginas": {
+  "cabecera": [
+   {
+    "n": 1,
+    "pos": 1,
+    "lon": 2,
+    "tipo": "An",
+    "casilla": null,
+    "constante": null,
+    "desc": "Constante."
+   },
+   {
+    "n": 2,
+    "pos": 3,
+    "lon": 3,
+    "tipo": "An",
+    "casilla": null,
+    "constante": null,
+    "desc": "Modelo"
+   },
+   {
+    "n": 3,
+    "pos": 6,
+    "lon": 1,
+    "tipo": "An",
+    "casilla": null,
+    "constante": null,
+    "desc": "Constante."
+   },
+   {
+    "n": 4,
+    "pos": 7,
+    "lon": 4,
+    "tipo": "An",
+    "casilla": null,
+    "constante": null,
+    "desc": "Ejercicio devengo. (AAAA)"
+   },
+   {
+    "n": 5,
+    "pos": 11,
+    "lon": 2,
+    "tipo": "An",
+    "casilla": null,
+    "constante": null,
+    "desc": "Período. (PP)"
+   },
+   {
+    "n": 6,
+    "pos": 13,
+    "lon": 5,
+    "tipo": "An",
+    "casilla": null,
+    "constante": null,
+    "desc": "Constante."
+   },
+   {
+    "n": 7,
+    "pos": 18,
+    "lon": 5,
+    "tipo": "An",
+    "casilla": null,
+    "constante": null,
+    "desc": "Constante"
+   },
+   {
+    "n": 8,
+    "pos": 23,
+    "lon": 70,
+    "tipo": "An",
+    "casilla": null,
+    "constante": null,
+    "desc": "Reservado para la Administración. Rellenar con blancos"
+   },
+   {
+    "n": 9,
+    "pos": 93,
+    "lon": 4,
+    "tipo": "An",
+    "casilla": null,
+    "constante": null,
+    "desc": "Versión del Programa (Nota 1)"
+   },
+   {
+    "n": 10,
+    "pos": 97,
+    "lon": 4,
+    "tipo": "An",
+    "casilla": null,
+    "constante": null,
+    "desc": "Reservado para la Administración. Rellenar con blancos"
+   },
+   {
+    "n": 11,
+    "pos": 101,
+    "lon": 9,
+    "tipo": "An",
+    "casilla": null,
+    "constante": null,
+    "desc": "NIF Empresa Desarrollo (Nota 1)"
+   },
+   {
+    "n": 12,
+    "pos": 110,
+    "lon": 213,
+    "tipo": "An",
+    "casilla": null,
+    "constante": null,
+    "desc": "Reservado para la Administración. Rellenar con blancos"
+   },
+   {
+    "n": 13,
+    "pos": 323,
+    "lon": 6,
+    "tipo": "An",
+    "casilla": null,
+    "constante": null,
+    "desc": "Constante"
+   },
+   {
+    "n": 14,
+    "pos": 329,
+    "lon": null,
+    "tipo": "An",
+    "casilla": null,
+    "constante": null,
+    "desc": "Contenido del fichero. Aquí se debe incluir el contenido de las páginas correspondientes a la declaración según el formato descrito para cada página en este mis"
+   }
+  ],
+  "01": [
+   {
+    "n": 1,
+    "pos": 1,
+    "lon": 2,
+    "tipo": "An",
+    "casilla": null,
+    "constante": "<T",
+    "desc": "Inicio del identificador de modelo y página"
+   },
+   {
+    "n": 2,
+    "pos": 3,
+    "lon": 3,
+    "tipo": "Num",
+    "casilla": null,
+    "constante": "111",
+    "desc": "Modelo"
+   },
+   {
+    "n": 3,
+    "pos": 6,
+    "lon": 2,
+    "tipo": "Num",
+    "casilla": null,
+    "constante": "01",
+    "desc": "Página"
+   },
+   {
+    "n": 4,
+    "pos": 8,
+    "lon": 4,
+    "tipo": "An",
+    "casilla": null,
+    "constante": "000>",
+    "desc": "Fin de identificador de modelo"
+   },
+   {
+    "n": 5,
+    "pos": 12,
+    "lon": 1,
+    "tipo": "A",
+    "casilla": null,
+    "constante": null,
+    "desc": "Indicador de página complementaria"
+   },
+   {
+    "n": 6,
+    "pos": 13,
+    "lon": 1,
+    "tipo": "A",
+    "casilla": null,
+    "constante": null,
+    "desc": "Tipo de declaración"
+   },
+   {
+    "n": 7,
+    "pos": 14,
+    "lon": 9,
+    "tipo": "An",
+    "casilla": null,
+    "constante": null,
+    "desc": "Identificación. Sujeto pasivo. NIF"
+   },
+   {
+    "n": 8,
+    "pos": 23,
+    "lon": 60,
+    "tipo": "An",
+    "casilla": null,
+    "constante": null,
+    "desc": "Identificación. Sujeto pasivo. Denominación o Apellidos"
+   },
+   {
+    "n": 9,
+    "pos": 83,
+    "lon": 20,
+    "tipo": "An",
+    "casilla": null,
+    "constante": null,
+    "desc": "Identificación. Sujeto pasivo. Nombre"
+   },
+   {
+    "n": 10,
+    "pos": 103,
+    "lon": 4,
+    "tipo": "Num",
+    "casilla": null,
+    "constante": null,
+    "desc": "Devengo. Ejercicio"
+   },
+   {
+    "n": 11,
+    "pos": 107,
+    "lon": 2,
+    "tipo": "An",
+    "casilla": null,
+    "constante": null,
+    "desc": "Devengo. Periodo"
+   },
+   {
+    "n": 12,
+    "pos": 109,
+    "lon": 8,
+    "tipo": "Num",
+    "casilla": "01",
+    "constante": null,
+    "desc": "Rendim. del trabajo - Rendimientos dinerarios - Nº de perceptores"
+   },
+   {
+    "n": 13,
+    "pos": 117,
+    "lon": 17,
+    "tipo": "Num",
+    "casilla": "02",
+    "constante": null,
+    "desc": "Rendim. del trabajo - Rendimientos dinerarios - Importe percepciones"
+   },
+   {
+    "n": 14,
+    "pos": 134,
+    "lon": 17,
+    "tipo": "Num",
+    "casilla": "03",
+    "constante": null,
+    "desc": "Rendim. del trabajo - Rendimientos dinerarios - Importe retenciones"
+   },
+   {
+    "n": 15,
+    "pos": 151,
+    "lon": 8,
+    "tipo": "Num",
+    "casilla": "04",
+    "constante": null,
+    "desc": "Rendim. del trabajo - Rendimientos en especie- Nº de perceptores"
+   },
+   {
+    "n": 16,
+    "pos": 159,
+    "lon": 17,
+    "tipo": "Num",
+    "casilla": "05",
+    "constante": null,
+    "desc": "Rendim. del trabajo - Rendimientos en especie- Valor percepciones en especie"
+   },
+   {
+    "n": 17,
+    "pos": 176,
+    "lon": 17,
+    "tipo": "Num",
+    "casilla": "06",
+    "constante": null,
+    "desc": "Rendim. del trabajo - Rendimientos en especie- Importe ingresos a cuenta"
+   },
+   {
+    "n": 18,
+    "pos": 193,
+    "lon": 8,
+    "tipo": "Num",
+    "casilla": "07",
+    "constante": null,
+    "desc": "Rendim. actividades económicas - Rendimientos dinerarios -Nº de perceptores"
+   },
+   {
+    "n": 19,
+    "pos": 201,
+    "lon": 17,
+    "tipo": "Num",
+    "casilla": "08",
+    "constante": null,
+    "desc": "Rendim. actividades económicas - Rendimientos dinerarios -Importe percepciones"
+   },
+   {
+    "n": 20,
+    "pos": 218,
+    "lon": 17,
+    "tipo": "Num",
+    "casilla": "09",
+    "constante": null,
+    "desc": "Rendim. actividades económicas - Rendimientos dinerarios -Importe retenciones"
+   },
+   {
+    "n": 21,
+    "pos": 235,
+    "lon": 8,
+    "tipo": "Num",
+    "casilla": "10",
+    "constante": null,
+    "desc": "Rendim. actividades económicas - Rendimientos en especie -Nº de perceptores"
+   },
+   {
+    "n": 22,
+    "pos": 243,
+    "lon": 17,
+    "tipo": "Num",
+    "casilla": "11",
+    "constante": null,
+    "desc": "Rendim. actividades económicas - Rendimientos en especie-Valor percepciones en especie"
+   },
+   {
+    "n": 23,
+    "pos": 260,
+    "lon": 17,
+    "tipo": "Num",
+    "casilla": "12",
+    "constante": null,
+    "desc": "Rendim. actividades económicas - Rendimientos en especie- Importe de los ingresos a cuenta"
+   },
+   {
+    "n": 24,
+    "pos": 277,
+    "lon": 8,
+    "tipo": "Num",
+    "casilla": "13",
+    "constante": null,
+    "desc": "Premios- Premios dinerarios - Nº de perceptores"
+   },
+   {
+    "n": 25,
+    "pos": 285,
+    "lon": 17,
+    "tipo": "Num",
+    "casilla": "14",
+    "constante": null,
+    "desc": "Premios - Premios dinerarios - Importe de las percepciones"
+   },
+   {
+    "n": 26,
+    "pos": 302,
+    "lon": 17,
+    "tipo": "Num",
+    "casilla": "15",
+    "constante": null,
+    "desc": "Premios - Premios dinerarios - Importe de las retenciones"
+   },
+   {
+    "n": 27,
+    "pos": 319,
+    "lon": 8,
+    "tipo": "Num",
+    "casilla": "16",
+    "constante": null,
+    "desc": "Premios - Premios en especie - Nº de perceptores"
+   },
+   {
+    "n": 28,
+    "pos": 327,
+    "lon": 17,
+    "tipo": "Num",
+    "casilla": "17",
+    "constante": null,
+    "desc": "Premios - Premios en especie - Valor percepciones en especie"
+   },
+   {
+    "n": 29,
+    "pos": 344,
+    "lon": 17,
+    "tipo": "Num",
+    "casilla": "18",
+    "constante": null,
+    "desc": "Premios - Premios en especie - Importe de los ingresos a cuenta"
+   },
+   {
+    "n": 30,
+    "pos": 361,
+    "lon": 8,
+    "tipo": "Num",
+    "casilla": "19",
+    "constante": null,
+    "desc": "Ganancias patrim. Aprovecham. Forestales - Percep. dinerarias - Nº perceptores"
+   },
+   {
+    "n": 31,
+    "pos": 369,
+    "lon": 17,
+    "tipo": "Num",
+    "casilla": "20",
+    "constante": null,
+    "desc": "Ganancias patrim. Aprovecham. Forestales - Percep. dinerarias - Importe percepciones"
+   },
+   {
+    "n": 32,
+    "pos": 386,
+    "lon": 17,
+    "tipo": "Num",
+    "casilla": "21",
+    "constante": null,
+    "desc": "Ganancias patrim. Aprovecham. Forestales - Percep. dinerarias - Importe retenciones"
+   },
+   {
+    "n": 33,
+    "pos": 403,
+    "lon": 8,
+    "tipo": "Num",
+    "casilla": "22",
+    "constante": null,
+    "desc": "Ganancias patrim. Aprovecham. Forestales - Percep. en especie - Nº perceptores"
+   },
+   {
+    "n": 34,
+    "pos": 411,
+    "lon": 17,
+    "tipo": "Num",
+    "casilla": "23",
+    "constante": null,
+    "desc": "Ganancias patrim. Aprovecham. Forestales - Percep. en especie - Importe percepciones"
+   },
+   {
+    "n": 35,
+    "pos": 428,
+    "lon": 17,
+    "tipo": "Num",
+    "casilla": "24",
+    "constante": null,
+    "desc": "Ganancias patrim. Aprovecham. Forestales - Percep. en especie - Importe ingresos a cuenta"
+   },
+   {
+    "n": 36,
+    "pos": 445,
+    "lon": 8,
+    "tipo": "Num",
+    "casilla": "25",
+    "constante": null,
+    "desc": "Contraprest. cesión dchos. imagen - Nº de perceptores -"
+   },
+   {
+    "n": 37,
+    "pos": 453,
+    "lon": 17,
+    "tipo": "Num",
+    "casilla": "26",
+    "constante": null,
+    "desc": "Contraprest. cesión dchos. imagen - Contraprestaciones satisfechas"
+   },
+   {
+    "n": 38,
+    "pos": 470,
+    "lon": 17,
+    "tipo": "Num",
+    "casilla": "27",
+    "constante": null,
+    "desc": "Contraprest. cesión dchos. imagen - Importe de los ingresos a cuenta"
+   },
+   {
+    "n": 39,
+    "pos": 487,
+    "lon": 17,
+    "tipo": "Num",
+    "casilla": "28",
+    "constante": null,
+    "desc": "Total liquidación - Suma retenciones e ingresos a cuenta"
+   },
+   {
+    "n": 40,
+    "pos": 504,
+    "lon": 17,
+    "tipo": "N",
+    "casilla": "29",
+    "constante": null,
+    "desc": "Total liquidación - Resultado de anteriores declaraciones"
+   },
+   {
+    "n": 41,
+    "pos": 521,
+    "lon": 17,
+    "tipo": "Num",
+    "casilla": "30",
+    "constante": null,
+    "desc": "Total liquidación - Resultado a ingresar"
+   },
+   {
+    "n": 42,
+    "pos": 538,
+    "lon": 1,
+    "tipo": "An",
+    "casilla": null,
+    "constante": null,
+    "desc": "Declaración complementaria"
+   },
+   {
+    "n": 43,
+    "pos": 539,
+    "lon": 13,
+    "tipo": "An",
+    "casilla": null,
+    "constante": null,
+    "desc": "Número de justificante de la declaración anterior"
+   },
+   {
+    "n": 44,
+    "pos": 552,
+    "lon": 1,
+    "tipo": "An",
+    "casilla": null,
+    "constante": null,
+    "desc": "Reservado. Administración presentando declaración de Colegio Concertado (CC)"
+   },
+   {
+    "n": 45,
+    "pos": 553,
+    "lon": 34,
+    "tipo": "An",
+    "casilla": null,
+    "constante": null,
+    "desc": "Domiciliación - IBAN"
+   },
+   {
+    "n": 46,
+    "pos": 587,
+    "lon": 389,
+    "tipo": "An",
+    "casilla": null,
+    "constante": null,
+    "desc": "Reservado para la Administración"
+   },
+   {
+    "n": 47,
+    "pos": 976,
+    "lon": 13,
+    "tipo": "An",
+    "casilla": null,
+    "constante": null,
+    "desc": "Reservado para el sello electrónico de la AEAT"
+   },
+   {
+    "n": 48,
+    "pos": 989,
+    "lon": 12,
+    "tipo": "An",
+    "casilla": null,
+    "constante": "</T11101000>",
+    "desc": "Indicador de fin de registro"
+   }
+  ]
+ }
+}

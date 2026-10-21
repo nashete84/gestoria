@@ -134,7 +134,7 @@ Los gastos ya guardados no se recalculan. Descartado: una tabla completa por ep�
 - **111/115**: retenciones practicadas en gastos (115 = categoría alquiler de local).
 - **349**: por operador y clave; ingresos intracomunitarios S, gastos I (A si son equipos).
 - **347**: terceros nacionales sin retención por encima de 3.005,06 € con IVA, por trimestres. Fuera: cuota de autónomos (Seguridad Social). También se quitó del aviso del calendario.
-- **390**: pendiente de su diseño de registro (numeración de casillas distinta del 303).
+- **390**: ver "Ficheros .txt de los modelos".
 
 **Ajustes manuales por ejercicio** (tabla `modelos_ajustes`, migración 6): saldo a compensar del 303 al empezar el año, devolución o compensación del 4T y rendimiento del año anterior.
 
@@ -142,7 +142,17 @@ Los gastos ya guardados no se recalculan. Descartado: una tabla completa por ep�
 
 **349 y 347 con su diseño oficial** (PDF de la AEAT: Anexo Orden HAC/174/2020 y diseño del 347 para 2025 y siguientes). Registros de 500 posiciones en ISO-8859-1, separados por CR+LF (el diseño no dice nada de separadores; es lo habitual en la presentación por fichero). Los tests comprueban las posiciones campo a campo.
 - Número identificativo de la declaración: modelo + ejercicio + periodo + secuencia (13 dígitos).
-- Nombre del declarante: nuevo campo del perfil "Nombre para Hacienda" (apellidos primero); si falta, se usa el nombre y se avisa.
+- Nombre del declarante: apellidos y nombre del perfil (ver abajo); si faltan, se usa el nombre y se avisa.
 - 347: los proveedores no tienen provincia en la app; se pone 00 y se avisa para corregirla en la Sede. Descartado de momento: añadir la provincia al gasto.
 
-**303, 130, 111, 115 y 390 pendientes.** La AEAT solo publica sus diseños en Excel, y la red de la nube y la del Mac (desde esta sesión) bloquean la descarga. Descartado: usar diseños antiguos en PDF (2008-2012), que no coinciden con los actuales.
+**303, 130, 111, 115 y 390 con sus diseños oficiales en Excel** (DR303e26v101, DR130e15v12, dr111e16v18, DR115e15v13, dr390e2025), descargados por Nacho porque la red de la nube no llega a la AEAT.
+- `scripts/extraer-disenos.py` los convierte a JSON (`src/core/modelos/disenos/`) y un motor genérico (`posicional.ts`) escribe cada campo: valor a mano, constante del diseño, importe de su casilla o ceros/blancos. Comprueba que cada página es contigua y que los números caben. Descartado: escribir las posiciones a mano en el código (cientos de campos en el 390, y cambian cada año: basta volver a pasar el script).
+- Casillas que el Excel no numera o numera mal (todo el 111, el 130 y el campo 16 del 115): corregidas en el script; en los tres, el campo n es la casilla n - 11.
+- **Validado contra ficheros reales** guardados desde el formulario de la AEAT (303 3T 2026 y 390 2025 de Nacho, que no se suben al repo): el 303 sale idéntico byte a byte salvo el bloque AUX; el 390, salvo el AUX y el bloque del representante. Las marcas que el formulario rellena y el diseño no explica (situaciones del 303 "223222222", tipo 0,5 % del recargo, ceros en el 390) se copian de esos ficheros.
+- Bloque AUX: versión "v1.0" y el NIF del declarante como "empresa de desarrollo" (el formulario pone "v2.0" y 12345678Z). Pendiente de confirmar que la Sede lo acepta al importar.
+- Tipo de declaración: 303 I/C/D/N, 130 I/B/N, 111 y 115 I/N. Sin domiciliación (U): se elige en el formulario. 303 "sin actividad" (X) cuando sale a cero sin IVA devengado ni deducible. Devolución: IBAN del perfil y marca SEPA 1 (cuenta española).
+- Diseño por año: el 303 es el de 2026 y el 390 el de 2025; con otro ejercicio el fichero avisa de que puede haber cambiado.
+
+**390 calculado a partir del año y de los cuatro 303.** Devengado y deducible por tipo con la numeración propia del 390; compras intracomunitarias: bienes de inversión como bienes y el resto como servicios (igual que en el 349). 85 = compensación del año anterior aplicada (se gasta antes que la del propio año), 95 = suma de los 303 a ingresar, 97/98 del 4T y 662 = lo generado en el año que queda pendiente fuera del 97; si 86 no cuadra con 95 − 97 − 98 − 662 se avisa. Datos estadísticos: hasta seis actividades del perfil con su epígrafe; clave A05 para profesionales (la que puso la AEAT en el 390 de 2025 de Nacho), A01 para empresariales sin verificar. Sin bloque de representante (no hace falta si presentas tú). Descartado: pedir el 390 a mano como resumen de los 303 presentados.
+
+**Apellidos y nombre por separado en el perfil** (sustituye a "Nombre para Hacienda"): el 130, 111, 115 y 390 los piden en campos distintos. Un perfil antiguo se convierte solo: la última palabra pasa a nombre.

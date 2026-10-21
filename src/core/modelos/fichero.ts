@@ -39,11 +39,19 @@ export function nif9(nif: string): string {
   return normalizarNif(nif).slice(-9).padStart(9, '0')
 }
 
-/** Nombre del declarante: apellidos primero. Si no se ha indicado, el del perfil tal cual (con aviso). */
+/** Apellidos y nombre del declarante por separado. Si faltan en el perfil, el nombre tal cual como apellidos (con aviso). */
+export function identidad(perfil: Perfil, avisos: string[]): { apellidos: string; nombre: string } {
+  const apellidos = perfil.apellidos?.trim() ?? ''
+  const nombre = perfil.nombrePila?.trim() ?? ''
+  if (apellidos && nombre) return { apellidos, nombre }
+  avisos.push('Indica en tu perfil tus apellidos y tu nombre por separado, como constan en Hacienda: la AEAT los compara con tu NIF.')
+  return { apellidos: apellidos || perfil.nombre, nombre }
+}
+
+/** Nombre del declarante en un solo campo: apellidos primero. */
 export function nombreDeclarante(perfil: Perfil, avisos: string[]): string {
-  if (perfil.nombreFiscal?.trim()) return perfil.nombreFiscal
-  avisos.push('Indica en tu perfil el "Nombre para Hacienda" (apellidos primero): Hacienda lo compara con tu NIF.')
-  return perfil.nombre
+  const { apellidos, nombre } = identidad(perfil, avisos)
+  return `${apellidos} ${nombre}`.trim()
 }
 
 export function telefono9(t: string): string {

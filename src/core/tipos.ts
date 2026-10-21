@@ -46,8 +46,9 @@ export interface Perfil {
   exento130?: boolean
   /** Fecha desde la que la app controla los modelos (AAAA-MM-DD). Por defecto, 1 de enero del año en curso. */
   inicioControl?: string
-  /** Nombre como lo pide Hacienda en los ficheros: "PRIMER APELLIDO SEGUNDO APELLIDO NOMBRE". */
-  nombreFiscal?: string
+  /** Apellidos y nombre tal como constan en Hacienda, por separado (los ficheros de los modelos los piden así). */
+  apellidos?: string
+  nombrePila?: string
   /** % de la vivienda dedicado a la actividad (m² del despacho / m² totales). */
   pctViviendaAfecta?: number
 }

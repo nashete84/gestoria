@@ -40,5 +40,6 @@ it('calcula los modelos con los datos guardados', () => {
   const r130 = calcularModelo(db, '130', 2026, '1T')
   expect(r130.avisos.join(' ')).toMatch(/rendimiento neto de 2025/)
   expect(() => calcularModelo(db, '303', 2026, '0A')).toThrow(/trimestral/)
-  expect(() => calcularModelo(db, '390', 2026, '0A')).toThrow(/aún no/)
+  expect(calcularModelo(db, '390', 2026, '0A').casillas['06']).toBe(21000)
+  expect(() => calcularModelo(db, '190', 2026, '0A')).toThrow(/aún no/)
 })

@@ -53,9 +53,17 @@ export function nuevaActividad(e: Epigrafe, id: string, principal: boolean): Act
  * Convierte perfiles guardados con un solo `epigrafe` (versión anterior) al formato de actividades.
  * Los perfiles ya convertidos se devuelven tal cual.
  */
-export function normalizarPerfil(raw: Perfil & { epigrafe?: Epigrafe }): Perfil {
-  if (raw.actividades?.length) return raw
-  const { epigrafe, ...resto } = raw
-  const e = epigrafe ?? { seccion: 2 as const, codigo: '', descripcion: '' }
-  return { ...resto, actividades: [nuevaActividad(e, 'a1', true)] }
+export function normalizarPerfil(raw: Perfil & { epigrafe?: Epigrafe; nombreFiscal?: string }): Perfil {
+  const { epigrafe, nombreFiscal, ...p } = raw
+  let perfil: Perfil = p
+  if (!p.actividades?.length) {
+    const e = epigrafe ?? { seccion: 2 as const, codigo: '', descripcion: '' }
+    perfil = { ...p, actividades: [nuevaActividad(e, 'a1', true)] }
+  }
+  // Versiones anteriores guardaban "APELLIDOS NOMBRE" en un solo campo: la última palabra pasa a ser el nombre.
+  if (nombreFiscal?.trim() && perfil.apellidos === undefined && perfil.nombrePila === undefined) {
+    const partes = nombreFiscal.trim().split(/\s+/)
+    perfil = { ...perfil, apellidos: partes.slice(0, -1).join(' '), nombrePila: partes.at(-1) }
+  }
+  return perfil
 }

@@ -32,6 +32,36 @@ export const CASILLAS: Partial<Record<Modelo, Record<string, string>>> = {
   '115': {
     '01': 'Nº de perceptores', '02': 'Base de las retenciones', '03': 'Retenciones', '04': 'A deducir (complementaria)', '05': 'Resultado a ingresar'
   },
+  '390': {
+    '700': 'Base al 0%', '701': 'Cuota al 0%', '01': 'Base al 4%', '02': 'Cuota al 4%', '03': 'Base al 10%', '04': 'Cuota al 10%',
+    '05': 'Base al 21%', '06': 'Cuota al 21%',
+    '21': 'Adq. intracomunitarias de bienes al 4%: base', '22': 'Adq. intracomunitarias de bienes al 4%: cuota',
+    '23': 'Adq. intracomunitarias de bienes al 10%: base', '24': 'Adq. intracomunitarias de bienes al 10%: cuota',
+    '25': 'Adq. intracomunitarias de bienes al 21%: base', '26': 'Adq. intracomunitarias de bienes al 21%: cuota',
+    '545': 'Adq. intracomunitarias de servicios al 4%: base', '546': 'Adq. intracomunitarias de servicios al 4%: cuota',
+    '547': 'Adq. intracomunitarias de servicios al 10%: base', '548': 'Adq. intracomunitarias de servicios al 10%: cuota',
+    '551': 'Adq. intracomunitarias de servicios al 21%: base', '552': 'Adq. intracomunitarias de servicios al 21%: cuota',
+    '27': 'Inversión del sujeto pasivo: base', '28': 'Inversión del sujeto pasivo: cuota',
+    '33': 'Total bases devengadas', '34': 'Total cuotas devengadas', '47': 'Total cuotas devengadas (con recargo)',
+    '190': 'Deducible, interiores corrientes al 4%: base', '191': 'Deducible, interiores corrientes al 4%: cuota',
+    '603': 'Deducible, interiores corrientes al 10%: base', '604': 'Deducible, interiores corrientes al 10%: cuota',
+    '605': 'Deducible, interiores corrientes al 21%: base', '606': 'Deducible, interiores corrientes al 21%: cuota',
+    '48': 'Total interiores corrientes: base', '49': 'Total interiores corrientes: cuota',
+    '196': 'Deducible, bienes de inversión al 4%: base', '197': 'Deducible, bienes de inversión al 4%: cuota',
+    '611': 'Deducible, bienes de inversión al 10%: base', '612': 'Deducible, bienes de inversión al 10%: cuota',
+    '613': 'Deducible, bienes de inversión al 21%: base', '614': 'Deducible, bienes de inversión al 21%: cuota',
+    '50': 'Total bienes de inversión: base', '51': 'Total bienes de inversión: cuota',
+    '633': 'Deducible, intracom. de inversión al 21%: base', '634': 'Deducible, intracom. de inversión al 21%: cuota',
+    '58': 'Total intracom. de inversión: base', '59': 'Total intracom. de inversión: cuota',
+    '637': 'Deducible, servicios intracom. al 21%: base', '638': 'Deducible, servicios intracom. al 21%: cuota',
+    '597': 'Total servicios intracom.: base', '598': 'Total servicios intracom.: cuota',
+    '64': 'Suma de deducciones', '65': 'Resultado régimen general', '84': 'Suma de resultados',
+    '85': 'Compensación de cuotas del ejercicio anterior', '86': 'Resultado de la liquidación anual',
+    '95': 'Total ingresado en los 303 del año', '97': 'Último periodo: a compensar', '98': 'Último periodo: a devolver',
+    '662': 'Cuotas pendientes de compensar generadas en el año',
+    '99': 'Volumen: operaciones en régimen general', '103': 'Volumen: entregas y servicios intracomunitarios',
+    '110': 'Volumen: no sujetas por reglas de localización', '108': 'Total volumen de operaciones'
+  },
   '349': { operadores: 'Nº de operadores', importe: 'Importe total' },
   '347': { declarados: 'Nº de declarados', importe: 'Importe total' }
 }
