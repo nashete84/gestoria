@@ -15,7 +15,9 @@ const MODELO = {
   info: { nombre: 'Qwen3 4B Instruct', tamano: '2,5 GB', memoria: '8 GB de RAM o más' } satisfies InfoModeloAsistente
 }
 
-const cargarLibreria = () => import('node-llama-cpp')
+const cargarLibreria = () => import('node-llama-cpp').catch((e: unknown) => {
+  throw new Error(`Falta la librería del asistente (node-llama-cpp). Ejecuta "npm install" en la carpeta del proyecto. Detalle: ${e instanceof Error ? e.message : String(e)}`)
+})
 
 export class MotorLocal implements Motor {
   private descarga: { downloader: ModelDownloader; control: AbortController } | null = null
