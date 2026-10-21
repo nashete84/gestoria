@@ -7,14 +7,16 @@ import { PaginaClientes } from './pages/Clientes'
 import { PaginaGastos } from './pages/Gastos'
 import { PaginaImpuestos } from './pages/Impuestos'
 import { PaginaIngresos } from './pages/Ingresos'
+import { PaginaInformes } from './pages/Informes'
 import { PaginaPerfil } from './pages/Perfil'
 import { PaginaRenta } from './pages/Renta'
 import { PaginaResumen } from './pages/Resumen'
 
-type Pagina = 'resumen' | 'impuestos' | 'renta' | 'ingresos' | 'gastos' | 'clientes' | 'perfil'
+type Pagina = 'resumen' | 'informes' | 'impuestos' | 'renta' | 'ingresos' | 'gastos' | 'clientes' | 'perfil'
 
 const MENU: { id: Pagina; nombre: string }[] = [
   { id: 'resumen', nombre: 'Resumen' },
+  { id: 'informes', nombre: 'Informes' },
   { id: 'impuestos', nombre: 'Impuestos' },
   { id: 'renta', nombre: 'Renta' },
   { id: 'ingresos', nombre: 'Ingresos' },
@@ -60,6 +62,7 @@ export function App() {
         {!perfil ? <p className="avisos">Empieza rellenando tu perfil fiscal.</p> : null}
         {pagina === 'perfil' ? <PaginaPerfil onGuardado={setPerfil} /> : null}
         {perfil && pagina === 'resumen' ? <PaginaResumen /> : null}
+        {perfil && pagina === 'informes' ? <PaginaInformes /> : null}
         {perfil && pagina === 'impuestos' ? <PaginaImpuestos onCambio={contarPendientes} /> : null}
         {perfil && pagina === 'renta' ? <PaginaRenta /> : null}
         {perfil && pagina === 'ingresos' ? <PaginaIngresos perfil={perfil} /> : null}

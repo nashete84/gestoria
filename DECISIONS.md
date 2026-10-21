@@ -170,3 +170,15 @@ Los gastos ya guardados no se recalculan. Descartado: una tabla completa por ep�
 **Sin probar con el modelo real:** la nube no llega a Hugging Face, así que el motor se ha probado cargando llama.cpp (Linux) y la conversación con un motor simulado. Falta la primera prueba en el Mac.
 
 **Chat flotante (2026-10-21, a petición de Nacho):** el asistente pasa de pestaña a un botón redondo abajo a la derecha que abre una ventana de chat en cualquier pantalla. La conversación se mantiene al cambiar de pantalla y se borra al cerrar la app.
+
+## Informes y simulador de IRPF (2026-10-21)
+
+**Pestaña Informes con tres vistas** (gastos e ingresos, previsión de ingresos, impuestos) y un año a elegir. Gráficos en SVG propio, sin librería: columnas finas, tooltip al pasar el ratón, leyenda y botón "Ver tabla"; azul para ingresos y naranja para gastos (pareja validada para daltonismo en modo claro y oscuro). Descartado: Recharts o Chart.js (dependencia más para dos gráficos).
+
+**Gastos e ingresos:** importes sin IVA y gastos completos, sin aplicar el % deducible (es lo que sale de tu bolsillo; lo deducible ya está en Renta). Bienes de inversión en el mes de compra. Reparto por categoría y por cliente (más de 8 se agrupan en "Otros"). En el año en curso se compara con el año anterior hasta la misma fecha, para no comparar 10 meses con 12.
+
+**Previsión (supuesta opción 1a, pendiente de confirmar por Nacho):** la media de los últimos 6 meses completos se repite hasta diciembre; en el mes en curso, solo lo que falta para llegar a esa media. Si el alta es reciente se usan menos meses y se avisa con menos de 3. Gastos igual. Con eso se calcula el IRPF del año y lo que falta por pagar. Un año cerrado no tiene previsión. Descartados: misma cifra que el año anterior (falla el primer año y si cambias de clientes) e introducirla a mano (queda en el simulador).
+
+**Impuestos:** por trimestre hasta el actual, el importe presentado si está marcado como presentado y, si no, el calculado con tus datos; la renta, con la estimación de la pestaña Renta. 111 y 115 solo si salen distintos de cero. Retenciones de clientes aparte, porque ya están pagadas.
+
+**Simulador de IRPF en la pestaña Impuestos (supuesta opción 3a, "¿y si…?"):** cuatro importes del año (ingresos, gastos deducibles, retenciones, 130) que empiezan con lo registrado más la previsión, y el resto de datos de la pestaña Renta. Reutiliza el mismo cálculo de la renta, así que no hay dos fórmulas que puedan dar cifras distintas. Muestra IRPF, cuánto más pagas por cada 1.000 € extra (tipo marginal), lo que te queda y el resultado de la renta.

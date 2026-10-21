@@ -1,6 +1,7 @@
 :root {
   --fondo: #f6f7f9; --panel: #fff; --texto: #1d2330; --suave: #5f6b7a; --borde: #dfe3e8;
   --acento: #2457d6; --acento-suave: #e8eefc; --peligro: #c23a3a; --aviso: #fff6e0; --error: #fdecec;
+  --serie-1: #2a78d6; --serie-2: #eb6834; --rejilla: #eceef1;
   color-scheme: light dark;
   font: 14px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
@@ -8,6 +9,7 @@
   :root {
     --fondo: #15181d; --panel: #1e232a; --texto: #e6e9ee; --suave: #9aa4b2; --borde: #333a44;
     --acento: #6d93ff; --acento-suave: #24304a; --peligro: #ff7b7b; --aviso: #3a3220; --error: #3e2222;
+    --serie-1: #3987e5; --serie-2: #d95926; --rejilla: #2a3038;
   }
 }
 * { box-sizing: border-box; }
@@ -113,3 +115,30 @@ table.desglose tr.info td { color: var(--suave); font-size: 12px; }
 .fuentes a { color: var(--acento); }
 .pregunta { display: flex; gap: 8px; align-items: flex-end; padding: 10px 12px; background: var(--panel); border-top: 1px solid var(--borde); }
 .pregunta textarea { flex: 1; font: inherit; padding: 8px; border: 1px solid var(--borde); border-radius: 8px; background: var(--panel); color: var(--texto); resize: none; }
+.pestanas { display: flex; gap: 4px; border-bottom: 1px solid var(--borde); margin-bottom: 16px; }
+.pestanas button { background: none; color: var(--suave); border: 0; border-bottom: 2px solid transparent; border-radius: 0; padding: 8px 12px; }
+.pestanas button.activo { color: var(--acento); border-bottom-color: var(--acento); font-weight: 600; }
+.cifra small { color: var(--suave); font-size: 12px; }
+.grafico { background: var(--panel); border: 1px solid var(--borde); border-radius: 10px; padding: 14px 16px; margin: 16px 0; }
+.grafico figcaption { display: flex; gap: 16px; align-items: center; margin-bottom: 8px; }
+.grafico figcaption strong { margin-right: auto; }
+.leyenda { display: flex; gap: 12px; font-size: 12px; color: var(--suave); }
+.leyenda span, .tooltip div { display: inline-flex; align-items: center; gap: 6px; }
+.leyenda i { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+.leyenda i.trama { background-image: repeating-linear-gradient(45deg, transparent 0 2px, var(--panel) 2px 4px) !important; }
+.lienzo { position: relative; }
+.lienzo svg { width: 100%; height: auto; display: block; }
+.lienzo .rejilla { stroke: var(--rejilla); stroke-width: 1; }
+.lienzo .eje { stroke: var(--borde); stroke-width: 1; }
+.lienzo .tick { fill: var(--suave); font-size: 11px; }
+.lienzo g.activa path { filter: brightness(1.12); }
+.lienzo rect:focus { outline: none; }
+.tooltip { position: absolute; top: 0; transform: translateX(-50%); background: var(--panel); border: 1px solid var(--borde); border-radius: 8px; padding: 8px 10px; font-size: 12px; pointer-events: none; box-shadow: 0 4px 12px rgba(0, 0, 0, .12); white-space: nowrap; display: flex; flex-direction: column; gap: 2px; }
+.tooltip-titulo { color: var(--suave); }
+.tooltip i { width: 10px; height: 2px; display: inline-block; }
+.dos-columnas { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; }
+.dos-columnas .grafico { margin: 0; }
+.reparto-fila { display: grid; grid-template-columns: minmax(100px, 1.2fr) 2fr auto; gap: 10px; align-items: center; padding: 3px 0; font-size: 13px; }
+.reparto-nombre { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.reparto-barra { height: 10px; }
+.reparto-barra span { display: block; height: 100%; border-radius: 0 4px 4px 0; min-width: 2px; }

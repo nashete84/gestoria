@@ -7,6 +7,7 @@ import type { ApiGestoria, Resultado } from '../core/api'
 import * as facturas from '../core/db/facturas'
 import * as modelos from '../core/db/modelos'
 import * as renta from '../core/db/renta'
+import * as informes from '../core/db/informes'
 import * as repos from '../core/db/repos'
 import { htmlFactura } from '../core/plantillaFactura'
 import { ENVIO_HABILITADO } from '../core/verifactu'
@@ -196,6 +197,10 @@ const handlers: Handlers = {
   abrirCarpetaDatos: async () => {
     await shell.openPath(carpetaDatos())
   },
+  informeIngresosGastos: (ej, hoy) => informes.informeIngresosGastosDb(db, id(ej), fechaValida(hoy)),
+  informeImpuestos: (ej, hoy) => informes.informeImpuestosDb(db, id(ej), fechaValida(hoy)),
+  informePrevision: (ej, hoy) => informes.prevision(db, id(ej), fechaValida(hoy)),
+  simularIrpf: (ej, entrada) => informes.simulacionIrpf(db, id(ej), entrada),
   estadoAsistente: async () => ({ estado: asistente().estado(), modelo: asistente().info }),
   descargarModeloAsistente: () => asistente().descargar(),
   cancelarDescargaAsistente: () => asistente().cancelarDescarga(),

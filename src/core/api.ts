@@ -8,6 +8,9 @@ import type { EstadoAsistente, EventoAsistente, InfoModeloAsistente, RespuestaAs
 import type { MensajeChat } from './asistente/prompt'
 import type { Modelo, Periodo } from './calendario'
 import type { DatosRenta } from './renta/calculo'
+import type { InformeImpuestos, InformeIngresosGastos } from './informes'
+import type { Prevision } from './prevision'
+import type { EntradaSimulador, ResultadoSimulador } from './simulador'
 import type {
   Adjunto, Cliente, ClienteNuevo, Gasto, GastoNuevo, Ingreso, IngresoNuevo, Perfil
 } from './tipos'
@@ -76,6 +79,11 @@ export interface ApiGestoria {
   /** Muestra la carpeta donde están la base de datos y los adjuntos (para copias de seguridad). */
   abrirCarpetaDatos(): Promise<Resultado<void>>
 
+  informeIngresosGastos(ejercicio: number, hoy: string): Promise<Resultado<InformeIngresosGastos>>
+  informeImpuestos(ejercicio: number, hoy: string): Promise<Resultado<InformeImpuestos>>
+  informePrevision(ejercicio: number, hoy: string): Promise<Resultado<Prevision>>
+  simularIrpf(ejercicio: number, entrada: EntradaSimulador): Promise<Resultado<ResultadoSimulador>>
+
   /** Asistente de ayuda local: estado del modelo (descargado o no) y su información. */
   estadoAsistente(): Promise<Resultado<{ estado: EstadoAsistente; modelo: InfoModeloAsistente }>>
   /** Descarga el modelo (una vez). Termina al acabar o al cancelar; el progreso llega como evento. */
@@ -104,6 +112,6 @@ export const METODOS_API = [
   'listarFacturas', 'vistaPreviaFactura', 'guardarPdfBorrador', 'emitirFactura', 'detalleFactura', 'guardarPdfFactura', 'xmlVerifactu', 'anularFactura', 'enviarVerifactu',
   'estimacionRenta', 'guardarDatosRenta',
   'calcularModelo', 'guardarFicheroModelo', 'leerAjustesModelos', 'guardarAjustesModelos',
-  'abrirCarpetaDatos',
+  'abrirCarpetaDatos', 'informeIngresosGastos', 'informeImpuestos', 'informePrevision', 'simularIrpf',
   'estadoAsistente', 'descargarModeloAsistente', 'cancelarDescargaAsistente', 'preguntarAsistente', 'cancelarPreguntaAsistente'
 ] as const satisfies readonly (keyof ApiGestoria)[]

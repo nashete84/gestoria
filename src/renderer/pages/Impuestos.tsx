@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { SimuladorIrpf } from './SimuladorIrpf'
 import {
   etiquetaPeriodo, NOMBRE_MODELO, type ObligacionConEstado, type PresentacionNueva, type Resultado
 } from '../../core/calendario'
@@ -184,6 +185,9 @@ export function PaginaImpuestos({ onCambio }: { onCambio: () => void }) {
           {!presentados.length ? <tr><td colSpan={7} className="vacio">Aún no has marcado ningún modelo como presentado.</td></tr> : null}
         </tbody>
       </table>
+      <h2>Simulador de IRPF</h2>
+      <SimuladorIrpf ejercicio={ejercicio} />
+
       <h2>Ajustes para calcular los modelos</h2>
       <AjustesEjercicio onCambio={() => setVersion((v) => v + 1)} />
 
