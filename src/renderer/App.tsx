@@ -59,7 +59,7 @@ export function App() {
         {perfil && pagina === 'resumen' ? <PaginaResumen /> : null}
         {perfil && pagina === 'impuestos' ? <PaginaImpuestos onCambio={contarPendientes} /> : null}
         {perfil && pagina === 'ingresos' ? <PaginaIngresos perfil={perfil} /> : null}
-        {perfil && pagina === 'gastos' ? <PaginaGastos /> : null}
+        {perfil && pagina === 'gastos' ? <PaginaGastos perfil={perfil} /> : null}
         {perfil && pagina === 'clientes' ? <PaginaClientes /> : null}
       </main>
     </div>

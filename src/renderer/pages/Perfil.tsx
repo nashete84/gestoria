@@ -102,6 +102,10 @@ export function PaginaPerfil({ onGuardado }: { onGuardado: (p: Perfil) => void }
           <input type="checkbox" checked={!!p.exento130} onChange={(e) => set('exento130', e.target.checked)} />
           No presento el 130 (el año pasado al menos el 70% de mis ingresos llevaron retención)
         </label>
+        <Campo etiqueta="% de la vivienda donde trabajas" ayuda="m² del despacho ÷ m² de la vivienda. Sirve para deducir luz, agua, gas e internet de casa.">
+          <input type="number" min={0} max={100} step="0.1" value={p.pctViviendaAfecta ?? 0}
+            onChange={(e) => set('pctViviendaAfecta', Number(e.target.value))} />
+        </Campo>
         <Campo etiqueta="Controlar impuestos desde" ayuda="Los modelos cuyo plazo terminó antes de esta fecha no aparecen.">
           <input type="date" value={p.inicioControl ?? `${hoy().slice(0, 4)}-01-01`} onChange={(e) => set('inicioControl', e.target.value)} />
         </Campo>

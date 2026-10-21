@@ -22,6 +22,7 @@ export function validarPerfil(p: Perfil): string[] {
   if (!p.nombre.trim()) e.push('Falta el nombre.')
   if (!p.epigrafe.codigo.trim()) e.push('Falta el epígrafe del IAE.')
   if (!fechaValida(p.fechaAlta)) e.push('La fecha de alta no es válida.')
+  if (p.pctViviendaAfecta !== undefined && !pctValido(p.pctViviendaAfecta)) e.push('El % de vivienda afecta debe estar entre 0 y 100.')
   return e
 }
 

@@ -1,7 +1,8 @@
 import Database from 'better-sqlite3'
 import { app, BrowserWindow, dialog, ipcMain, Notification, shell } from 'electron'
 import { writeFile } from 'node:fs/promises'
-import { join, resolve, sep } from 'node:path'
+import { randomUUID } from 'node:crypto'
+import { basename, join, resolve, sep } from 'node:path'
 import type { ApiGestoria, Resultado } from '../core/api'
 import * as facturas from '../core/db/facturas'
 import * as repos from '../core/db/repos'
@@ -91,14 +92,30 @@ const handlers: Handlers = {
 
   listarAdjuntos: (e, i) => repos.listarAdjuntos(db, entidad(e), id(i)),
   adjuntar: async (e, i) => {
-    const r = await dialog.showOpenDialog(ventana!, {
-      title: 'Adjuntar justificante',
-      properties: ['openFile', 'multiSelections'],
-      filters: [{ name: 'Justificantes', extensions: ['pdf', 'png', 'jpg', 'jpeg', 'heic', 'xml'] }]
-    })
-    if (r.canceled) return []
+    const rutas = await dialogoJustificantes()
     const creados = []
-    for (const origen of r.filePaths) {
+    for (const origen of rutas) {
+      const copia = await copiarAdjunto(origen, carpetaAdjuntos())
+      creados.push(repos.registrarAdjunto(db, { entidad: entidad(e), entidadId: id(i), ...copia }))
+    }
+    return creados
+  },
+  elegirArchivos: async () => {
+    const rutas = await dialogoJustificantes()
+    return rutas.map((ruta) => {
+      const ficha = randomUUID()
+      elegidos.set(ficha, ruta)
+      return { ficha, nombre: basename(ruta) }
+    })
+  },
+  adjuntarElegidos: async (e, i, fichas) => {
+    if (!Array.isArray(fichas)) throw new repos.ErrorValidacion(['Lista de archivos no válida.'])
+    const creados = []
+    for (const ficha of fichas) {
+      // Solo se copian archivos que el usuario eligió en el diálogo; nunca rutas enviadas por la interfaz.
+      const origen = elegidos.get(ficha)
+      if (!origen) continue
+      elegidos.delete(ficha)
       const copia = await copiarAdjunto(origen, carpetaAdjuntos())
       creados.push(repos.registrarAdjunto(db, { entidad: entidad(e), entidadId: id(i), ...copia }))
     }
@@ -151,6 +168,18 @@ const handlers: Handlers = {
   abrirCarpetaDatos: async () => {
     await shell.openPath(carpetaDatos())
   }
+}
+
+/** Archivos elegidos en el diálogo a la espera de que se guarde el ingreso o gasto. */
+const elegidos = new Map<string, string>()
+
+async function dialogoJustificantes(): Promise<string[]> {
+  const r = await dialog.showOpenDialog(ventana!, {
+    title: 'Adjuntar factura o justificante',
+    properties: ['openFile', 'multiSelections'],
+    filters: [{ name: 'Justificantes', extensions: ['pdf', 'png', 'jpg', 'jpeg', 'heic', 'xml'] }]
+  })
+  return r.canceled ? [] : r.filePaths
 }
 
 async function guardarPdf(d: facturas.DetalleFactura, nombre: string): Promise<string | null> {

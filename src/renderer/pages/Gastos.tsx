@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
+import { deduciblesPara } from '../../core/deducibles'
 import { calcularGasto, CATEGORIAS_GASTO, TIPOS_IVA } from '../../core/fiscalidad'
-import type { Gasto, GastoNuevo, OperacionGasto } from '../../core/tipos'
+import type { Gasto, GastoNuevo, OperacionGasto, Perfil } from '../../core/tipos'
 import { api, llamar, mensajes } from '../api'
 import {
-  Adjuntos, Campo, CampoEuros, CampoPct, Errores, euros, hoy, periodoActual, rango, SelectorPeriodo, type Periodo
+  Adjuntos, AdjuntosPendientes, type ArchivoElegido, Campo, CampoEuros, CampoPct, Errores, euros, hoy, periodoActual, rango, SelectorPeriodo, type Periodo
 } from '../componentes'
 
 const OPERACIONES: Record<OperacionGasto, string> = {
@@ -13,21 +14,23 @@ const OPERACIONES: Record<OperacionGasto, string> = {
   sin_iva: 'Sin IVA (exento o no sujeto)'
 }
 
-function deCategoria(id: string, base: Partial<GastoNuevo> = {}): GastoNuevo {
+function deCategoria(perfil: Perfil, id: string, base: Partial<GastoNuevo> = {}): GastoNuevo {
   const c = CATEGORIAS_GASTO.find((x) => x.id === id) ?? CATEGORIAS_GASTO[CATEGORIAS_GASTO.length - 1]!
+  const ded = deduciblesPara(perfil, c.id)
   return {
     fecha: hoy(), proveedor: '', nifProveedor: '', paisProveedor: 'ES', numeroFactura: '', concepto: '',
     base: 0, bienInversion: false, notas: '', ...base,
-    categoria: c.id, operacion: c.operacion, tipoIva: c.tipoIva, deduciblePctIrpf: c.deduciblePctIrpf,
-    deduciblePctIva: c.deduciblePctIva, retencionPct: c.retencionPct
+    categoria: c.id, operacion: c.operacion, tipoIva: c.tipoIva, deduciblePctIrpf: ded.irpf,
+    deduciblePctIva: ded.iva, retencionPct: c.retencionPct
   }
 }
 
-export function PaginaGastos() {
+export function PaginaGastos({ perfil }: { perfil: Perfil }) {
   const [periodo, setPeriodo] = useState<Periodo>(periodoActual())
   const [gastos, setGastos] = useState<Gasto[]>([])
   const [editando, setEditando] = useState<{ id: number | null; datos: GastoNuevo } | null>(null)
   const [errores, setErrores] = useState<string[]>([])
+  const [pendientes, setPendientes] = useState<ArchivoElegido[]>([])
 
   const cargar = () => {
     const { desde, hasta } = rango(periodo)
@@ -42,8 +45,13 @@ export function PaginaGastos() {
   const guardar = async () => {
     if (!editando) return
     try {
-      if (editando.id === null) await llamar(api.crearGasto(editando.datos))
-      else await llamar(api.actualizarGasto(editando.id, editando.datos))
+      if (editando.id === null) {
+        const g = await llamar(api.crearGasto(editando.datos))
+        if (pendientes.length) await llamar(api.adjuntarElegidos('gasto', g.id, pendientes.map((p) => p.ficha)))
+      } else {
+        await llamar(api.actualizarGasto(editando.id, editando.datos))
+      }
+      setPendientes([])
       setEditando(null)
       setErrores([])
       await cargar()
@@ -62,7 +70,7 @@ export function PaginaGastos() {
     }
   }
 
-  const categoria = CATEGORIAS_GASTO.find((c) => c.id === d?.categoria)
+  const deducible = deduciblesPara(perfil, d?.categoria ?? 'otros')
   const cuotas = d ? calcularGasto(d) : null
   const nombreCategoria = (id: string) => CATEGORIAS_GASTO.find((c) => c.id === id)?.nombre ?? id
   const total = (k: 'base' | 'cuotaIva') => gastos.reduce((a, g) => a + g[k], 0)
@@ -72,15 +80,15 @@ export function PaginaGastos() {
       <div className="cabecera">
         <h1>Gastos</h1>
         <SelectorPeriodo periodo={periodo} onChange={setPeriodo} />
-        <button onClick={() => { setEditando({ id: null, datos: deCategoria('otros') }); setErrores([]) }}>Nuevo gasto</button>
+        <button onClick={() => { setEditando({ id: null, datos: deCategoria(perfil, 'otros') }); setPendientes([]); setErrores([]) }}>Nuevo gasto</button>
       </div>
       <Errores errores={errores} />
 
       {d ? (
         <div className="tarjeta" key={editando.id ?? 'nuevo'}>
           <div className="rejilla">
-            <Campo etiqueta="Categoría" ayuda={categoria?.ayuda}>
-              <select value={d.categoria} onChange={(e) => set(deCategoria(e.target.value, d))}>
+            <Campo etiqueta="Categoría">
+              <select value={d.categoria} onChange={(e) => set(deCategoria(perfil, e.target.value, d))}>
                 {CATEGORIAS_GASTO.map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
               </select>
             </Campo>
@@ -112,6 +120,12 @@ export function PaginaGastos() {
             </label>
             <Campo etiqueta="Notas"><input value={d.notas} onChange={(e) => set({ notas: e.target.value })} /></Campo>
           </div>
+          <p className="nota deducible">
+            {deducible.explicacion}
+            {d.deduciblePctIrpf !== deducible.irpf || d.deduciblePctIva !== deducible.iva
+              ? <> <button className="enlace" onClick={() => set({ deduciblePctIrpf: deducible.irpf, deduciblePctIva: deducible.iva })}>Volver al % calculado</button></>
+              : null}
+          </p>
           {cuotas ? (
             <p className="nota">
               Cuota de IVA {euros(cuotas.cuotaIva)}
@@ -119,10 +133,12 @@ export function PaginaGastos() {
               {cuotas.cuotaRetencion ? ` · Retención a ingresar ${euros(cuotas.cuotaRetencion)}` : ''}
             </p>
           ) : null}
-          {editando.id !== null ? <Adjuntos entidad="gasto" id={editando.id} /> : <p className="nota">Guarda el gasto para poder adjuntar la factura.</p>}
+          {editando.id !== null
+            ? <Adjuntos entidad="gasto" id={editando.id} />
+            : <AdjuntosPendientes archivos={pendientes} onChange={setPendientes} />}
           <div className="acciones">
             <button onClick={guardar}>Guardar</button>
-            <button className="secundario" onClick={() => setEditando(null)}>Cancelar</button>
+            <button className="secundario" onClick={() => { setEditando(null); setPendientes([]) }}>Cancelar</button>
           </div>
         </div>
       ) : null}

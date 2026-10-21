@@ -113,3 +113,26 @@ export function Adjuntos({ entidad, id }: { entidad: Adjunto['entidad']; id: num
     </div>
   )
 }
+
+export interface ArchivoElegido { ficha: string; nombre: string }
+
+/** Selector de justificantes antes de guardar: se adjuntan al guardar el registro. */
+export function AdjuntosPendientes({ archivos, onChange }: { archivos: ArchivoElegido[]; onChange: (a: ArchivoElegido[]) => void }) {
+  const [errores, setErrores] = useState<string[]>([])
+  return (
+    <div className="adjuntos">
+      <Errores errores={errores} />
+      {archivos.map((a) => (
+        <span key={a.ficha} className="adjunto">
+          📎 {a.nombre}
+          <button className="mini" title="Quitar" onClick={() => onChange(archivos.filter((x) => x.ficha !== a.ficha))}>×</button>
+        </span>
+      ))}
+      <button className="secundario" onClick={() =>
+        llamar(api.elegirArchivos()).then((n) => onChange([...archivos, ...n])).catch((e) => setErrores(mensajes(e)))}>
+        Adjuntar factura
+      </button>
+      {archivos.length ? <small className="nota">Se guardarán con el gasto.</small> : null}
+    </div>
+  )
+}

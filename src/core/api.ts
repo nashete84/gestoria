@@ -30,6 +30,9 @@ export interface ApiGestoria {
   listarAdjuntos(entidad: Adjunto['entidad'], id: number): Promise<Resultado<Adjunto[]>>
   /** Abre el diálogo de archivos y copia los elegidos a la carpeta de la app. */
   adjuntar(entidad: Adjunto['entidad'], id: number): Promise<Resultado<Adjunto[]>>
+  /** Elige archivos antes de que exista el registro; devuelve fichas para adjuntarlos al guardar. */
+  elegirArchivos(): Promise<Resultado<{ ficha: string; nombre: string }[]>>
+  adjuntarElegidos(entidad: Adjunto['entidad'], id: number, fichas: string[]): Promise<Resultado<Adjunto[]>>
   abrirAdjunto(id: number): Promise<Resultado<void>>
   borrarAdjunto(id: number): Promise<Resultado<void>>
 
@@ -63,7 +66,7 @@ export const METODOS_API = [
   'listarClientes', 'crearCliente', 'actualizarCliente', 'borrarCliente',
   'listarIngresos', 'crearIngreso', 'actualizarIngreso', 'borrarIngreso',
   'listarGastos', 'crearGasto', 'actualizarGasto', 'borrarGasto',
-  'listarAdjuntos', 'adjuntar', 'abrirAdjunto', 'borrarAdjunto',
+  'listarAdjuntos', 'adjuntar', 'elegirArchivos', 'adjuntarElegidos', 'abrirAdjunto', 'borrarAdjunto',
   'resumen', 'calendarioFiscal', 'registrarPresentacion', 'borrarPresentacion',
   'listarFacturas', 'vistaPreviaFactura', 'guardarPdfBorrador', 'emitirFactura', 'detalleFactura', 'guardarPdfFactura', 'xmlVerifactu', 'anularFactura', 'enviarVerifactu',
   'abrirCarpetaDatos'

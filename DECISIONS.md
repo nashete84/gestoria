@@ -81,3 +81,15 @@ Hay que validar el XML contra los XSD oficiales antes de activar el envío.
 **Clientes extranjeros sin identificador fiscal.** Se pueden facturar; el registro VERI*FACTU omite el bloque `Destinatarios`. Los clientes españoles siguen necesitando NIF, y las empresas de la UE su NIF-IVA (sin él no se puede aplicar la inversión del sujeto pasivo). Supuesto pendiente de validar contra el XSD: que la AEAT acepta una F1 sin destinatario para clientes extranjeros; si no, la alternativa es emitirla como simplificada (F2) cuando el importe lo permita.
 
 **Vista previa antes de emitir.** "Vista previa de factura" guarda el ingreso, muestra la factura con el número que le tocaría, marca "BORRADOR · SIN EMITIR" y sin QR, y permite descargarla en PDF o emitirla desde ahí. No guarda nada ni consume número. Se muestra en un iframe con `sandbox` (sin scripts).
+
+## % deducible según el epígrafe y factura al crear el gasto (2026-10-21)
+
+**El % deducible se calcula al elegir la categoría** (`src/core/deducibles.ts`) a partir del epígrafe y del perfil, y se explica debajo del formulario. Se puede cambiar a mano y volver al calculado.
+- Suministros de casa: IRPF 30% × % de vivienda afecta (art. 30.2.5ª LIRPF); IVA en la proporción afecta. Nuevo campo en el perfil: "% de la vivienda donde trabajas". Sin él, 0%.
+- Equipos y software: 100% en epígrafes de informática (763 sección 2, 845 sección 1).
+- Vehículo: 0% IRPF y 50% IVA; 100% en agentes comerciales (511) y transporte (721, 722), art. 22.4 RIRPF.
+- Teléfono e internet: 50% por uso mixto.
+- Resto: el valor por defecto de la categoría.
+Los gastos ya guardados no se recalculan. Descartado: una tabla completa por epígrafe del IAE, que no aporta para un único usuario.
+
+**Adjuntar la factura antes de guardar el gasto.** El diálogo de archivos lo abre el proceso principal y devuelve fichas aleatorias; al guardar, la interfaz pasa las fichas y el proceso principal copia solo esos archivos. La interfaz nunca envía rutas.
