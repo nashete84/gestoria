@@ -200,3 +200,5 @@ Los gastos ya guardados no se recalculan. Descartado: una tabla completa por ep�
 - **Categorías nuevas:** "Alquiler de la vivienda donde trabajas" (sobre el % de vivienda afecta, sin IVA ni retención) y "Mobiliario de oficina".
 - **Actividad:** cada fila va a la actividad del perfil con su epígrafe; si el histórico trae un epígrafe que no está en el perfil, no se importa y se avisa (nada fijado a un epígrafe concreto).
 - La importación real de Nacho se hizo en su Mac (con copia de seguridad), y el resultado coincide con el de este importador: 29 ingresos y 45 gastos.
+
+**Resumen, Ingresos y Gastos se abren con el año entero (2026-10-22, a petición de Nacho)**, en vez del trimestre en curso. El trimestre se sigue pudiendo elegir en el selector.

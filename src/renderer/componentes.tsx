@@ -62,9 +62,9 @@ export function rango(p: Periodo) {
   return rangoPeriodo(p.anio, p.trimestre)
 }
 
+/** Periodo con el que se abren Resumen, Ingresos y Gastos: el año fiscal en curso entero. */
 export function periodoActual(): Periodo {
-  const hoy = new Date()
-  return { anio: hoy.getFullYear(), trimestre: (Math.floor(hoy.getMonth() / 3) + 1) as Periodo['trimestre'] }
+  return { anio: new Date().getFullYear(), trimestre: 0 }
 }
 
 export function SelectorPeriodo({ periodo, onChange }: { periodo: Periodo; onChange: (p: Periodo) => void }) {
