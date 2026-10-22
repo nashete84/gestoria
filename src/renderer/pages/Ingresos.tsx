@@ -7,6 +7,7 @@ import { FacturaPanel } from './FacturaPanel'
 import {
   Adjuntos, Avisos, Campo, CampoEuros, CampoPct, Errores, euros, hoy, periodoActual, rango, SelectorPeriodo, type Periodo
 } from '../componentes'
+import { BotonIcono, Icono } from '../iconos'
 
 const OPERACIONES: Record<OperacionIngreso, string> = {
   nacional: 'Con IVA español',
@@ -118,7 +119,7 @@ export function PaginaIngresos({ perfil }: { perfil: Perfil }) {
       <div className="cabecera">
         <h1>Ingresos</h1>
         <SelectorPeriodo periodo={periodo} onChange={setPeriodo} />
-        <button onClick={() => { setEditando({ id: null, datos: nuevo(), facturaId: null }); setAvisos([]); setErrores([]) }}>Nuevo ingreso</button>
+        <button onClick={() => { setEditando({ id: null, datos: nuevo(), facturaId: null }); setAvisos([]); setErrores([]) }}><Icono nombre="mas" />Nuevo ingreso</button>
       </div>
       <Errores errores={errores} />
 
@@ -170,9 +171,9 @@ export function PaginaIngresos({ perfil }: { perfil: Perfil }) {
             <FacturaPanel facturaId={editando.facturaId} onAnulada={() => { setEditando(null); void cargar() }} />
           ) : null}
           <div className="acciones">
-            {editando.facturaId === null ? <button onClick={guardar}>Guardar</button> : null}
-            {editando.facturaId === null && d.clienteId !== null ? <button className="secundario" onClick={verPrevia}>Vista previa de factura</button> : null}
-            {editando.id !== null && editando.facturaId === null ? <button className="secundario" onClick={emitir}>Emitir factura</button> : null}
+            {editando.facturaId === null ? <button onClick={guardar}><Icono nombre="guardar" />Guardar</button> : null}
+            {editando.facturaId === null && d.clienteId !== null ? <button className="secundario" onClick={verPrevia}><Icono nombre="ver" />Vista previa de factura</button> : null}
+            {editando.id !== null && editando.facturaId === null ? <button className="secundario" onClick={emitir}><Icono nombre="factura" />Emitir factura</button> : null}
             <button className="secundario" onClick={() => setEditando(null)}>{editando.facturaId === null ? 'Cancelar' : 'Cerrar'}</button>
           </div>
         </div>
@@ -183,7 +184,7 @@ export function PaginaIngresos({ perfil }: { perfil: Perfil }) {
           <div className="modal-caja" onClick={(e) => e.stopPropagation()}>
             <div className="cabecera">
               <h1>Vista previa</h1>
-              <button onClick={() => llamar(api.guardarPdfBorrador(editando.id!)).catch((e) => setErrores(mensajes(e)))}>Descargar PDF</button>
+              <button onClick={() => llamar(api.guardarPdfBorrador(editando.id!)).catch((e) => setErrores(mensajes(e)))}><Icono nombre="descargar" />Descargar PDF</button>
               <button onClick={() => { setPrevia(null); void emitir() }}>Emitir factura</button>
               <button className="secundario" onClick={() => setPrevia(null)}>Cerrar</button>
             </div>
@@ -206,16 +207,16 @@ export function PaginaIngresos({ perfil }: { perfil: Perfil }) {
               <td className="num">{euros(i.cuotaIva)}</td>
               <td className="num">{euros(i.cuotaRetencion)}</td>
               <td className="derecha">
-                <button className="secundario" onClick={() => {
+                <BotonIcono icono={i.facturaId ? 'ver' : 'editar'} texto={i.facturaId ? 'Ver' : 'Editar'} onClick={() => {
                   const { id, cuotaIva: _a, cuotaRetencion: _b, facturaId, ...datos } = i
                   setEditando({ id, datos, facturaId }); setAvisos([])
-                }}>{i.facturaId ? 'Ver' : 'Editar'}</button>
-                <button className="secundario" title="Crea un ingreso nuevo igual, con la fecha que elijas" onClick={() => {
+                }} />
+                <BotonIcono icono="duplicar" texto="Duplicar con otra fecha" onClick={() => {
                   const { id: _id, cuotaIva: _a, cuotaRetencion: _b, facturaId: _f, ...datos } = i
                   setEditando({ id: null, datos: { ...datos, fecha: hoy() }, facturaId: null, copiaDe: i.concepto || 'ingreso', clave: Date.now() })
                   setAvisos([]); setErrores([])
-                }}>Duplicar</button>
-                {i.facturaId ? null : <button className="peligro" onClick={() => borrar(i)}>Borrar</button>}
+                }} />
+                {i.facturaId ? null : <BotonIcono icono="borrar" texto="Borrar" peligro onClick={() => borrar(i)} />}
               </td>
             </tr>
           ))}
@@ -233,7 +234,7 @@ export function PaginaIngresos({ perfil }: { perfil: Perfil }) {
               {facturas.filter((f) => f.estado === 'anulada').map((f) => (
                 <tr key={f.id}>
                   <td>{f.numSerie}</td><td>{f.fechaExpedicion}</td><td>{f.cliente.nombre}</td><td className="num">{euros(f.base)}</td>
-                  <td className="derecha"><button className="secundario" onClick={() => llamar(api.guardarPdfFactura(f.id)).catch((e) => setErrores(mensajes(e)))}>PDF</button></td>
+                  <td className="derecha"><BotonIcono icono="descargar" texto="Descargar PDF" onClick={() => llamar(api.guardarPdfFactura(f.id)).catch((e) => setErrores(mensajes(e)))} /></td>
                 </tr>
               ))}
             </tbody>

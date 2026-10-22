@@ -6,6 +6,7 @@ import { api, llamar, mensajes } from '../api'
 import {
   Adjuntos, AdjuntosPendientes, type ArchivoElegido, Campo, CampoEuros, CampoPct, Errores, euros, hoy, periodoActual, rango, SelectorPeriodo, type Periodo
 } from '../componentes'
+import { BotonIcono, Icono } from '../iconos'
 
 const OPERACIONES: Record<OperacionGasto, string> = {
   nacional: 'Proveedor español con IVA',
@@ -83,7 +84,7 @@ export function PaginaGastos({ perfil }: { perfil: Perfil }) {
       <div className="cabecera">
         <h1>Gastos</h1>
         <SelectorPeriodo periodo={periodo} onChange={setPeriodo} />
-        <button onClick={() => { setEditando({ id: null, datos: deCategoria(perfil, 'otros') }); setPendientes([]); setErrores([]) }}>Nuevo gasto</button>
+        <button onClick={() => { setEditando({ id: null, datos: deCategoria(perfil, 'otros') }); setPendientes([]); setErrores([]) }}><Icono nombre="mas" />Nuevo gasto</button>
       </div>
       <Errores errores={errores} />
 
@@ -149,7 +150,7 @@ export function PaginaGastos({ perfil }: { perfil: Perfil }) {
             ? <Adjuntos entidad="gasto" id={editando.id} />
             : <AdjuntosPendientes archivos={pendientes} onChange={setPendientes} />}
           <div className="acciones">
-            <button onClick={guardar}>Guardar</button>
+            <button onClick={guardar}><Icono nombre="guardar" />Guardar</button>
             <button className="secundario" onClick={() => { setEditando(null); setPendientes([]) }}>Cancelar</button>
           </div>
         </div>
@@ -167,13 +168,13 @@ export function PaginaGastos({ perfil }: { perfil: Perfil }) {
               <td className="num">{euros(g.base)}</td>
               <td className="num">{euros(g.cuotaIva)}</td>
               <td className="derecha">
-                <button className="secundario" onClick={() => { const { id, cuotaIva: _a, cuotaRetencion: _b, ...datos } = g; setEditando({ id, datos }) }}>Editar</button>
-                <button className="secundario" title="Crea un gasto nuevo igual, con la fecha que elijas" onClick={() => {
+                <BotonIcono icono="editar" texto="Editar" onClick={() => { const { id, cuotaIva: _a, cuotaRetencion: _b, ...datos } = g; setEditando({ id, datos }) }} />
+                <BotonIcono icono="duplicar" texto="Duplicar con otra fecha" onClick={() => {
                   const { id: _id, cuotaIva: _a, cuotaRetencion: _b, ...datos } = g
                   setEditando({ id: null, datos: { ...datos, fecha: hoy(), numeroFactura: '' }, copiaDe: g.concepto || g.proveedor || 'gasto', clave: Date.now() })
                   setPendientes([]); setErrores([])
-                }}>Duplicar</button>
-                <button className="peligro" onClick={() => borrar(g)}>Borrar</button>
+                }} />
+                <BotonIcono icono="borrar" texto="Borrar" peligro onClick={() => borrar(g)} />
               </td>
             </tr>
           ))}

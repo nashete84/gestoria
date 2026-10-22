@@ -3,6 +3,7 @@ import type { MensajeChat, FichaCitada } from '../../core/asistente/prompt'
 import type { EstadoAsistente, InfoModeloAsistente } from '../../core/asistente/servicio'
 import { api, eventos, llamar, mensajes } from '../api'
 import { Errores } from '../componentes'
+import { Icono } from '../iconos'
 
 interface Turno extends MensajeChat {
   fichas?: FichaCitada[]
@@ -125,7 +126,7 @@ export function ChatAsistente() {
             onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); void enviar(pregunta) } }} />
           {enCurso
             ? <button type="button" className="secundario" onClick={() => void api.cancelarPreguntaAsistente(enCurso.id)}>Parar</button>
-            : <button type="submit" disabled={!pregunta.trim()}>Enviar</button>}
+            : <button type="submit" disabled={!pregunta.trim()}><Icono nombre="enviar" tamano={16} />Enviar</button>}
         </form>
       </>
     )
@@ -136,7 +137,7 @@ export function ChatAsistente() {
       <header>
         <strong>Asistente</strong>
         {turnos.length ? <button className="mini" disabled={!!enCurso} onClick={() => setTurnos([])}>Nueva</button> : null}
-        <button className="mini" title="Cerrar" onClick={() => setAbierto(false)}>✕</button>
+        <button className="mini" title="Cerrar" aria-label="Cerrar" onClick={() => setAbierto(false)}><Icono nombre="cerrar" tamano={16} /></button>
       </header>
       {cuerpo}
     </aside>

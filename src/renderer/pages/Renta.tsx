@@ -3,6 +3,7 @@ import type { VistaRenta } from '../../core/db/renta'
 import type { DatosRenta, EstimacionRenta, GradoDiscapacidad } from '../../core/renta/calculo'
 import { api, llamar, mensajes } from '../api'
 import { Avisos, Campo, CampoEuros, Errores, euros, hoy } from '../componentes'
+import { Icono } from '../iconos'
 
 /** Hasta junio se mira la renta del año pasado (la que se presenta); después, la del año en curso. */
 function ejercicioPorDefecto() {
@@ -66,7 +67,7 @@ export function PaginaRenta() {
           <p className="nota">Lo que no sale de tus ingresos y gastos. Se guarda para este ejercicio.</p>
           <FormularioDatos key={ejercicio} datos={datos} ejercicio={ejercicio} set={set} />
           <div className="acciones">
-            <button onClick={guardar}>Guardar y recalcular</button>
+            <button onClick={guardar}><Icono nombre="guardar" />Guardar y recalcular</button>
             {guardado ? <span className="ok">Guardado</span> : null}
           </div>
           <p className="nota">

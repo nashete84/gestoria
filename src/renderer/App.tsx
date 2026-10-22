@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import type { Perfil } from '../core/tipos'
 import { api, llamar, mensajes } from './api'
 import { Errores, hoy } from './componentes'
+import { Icono, type NombreIcono } from './iconos'
 import { ChatAsistente } from './pages/Asistente'
 import { PaginaClientes } from './pages/Clientes'
 import { PaginaGastos } from './pages/Gastos'
@@ -14,15 +15,15 @@ import { PaginaResumen } from './pages/Resumen'
 
 type Pagina = 'resumen' | 'informes' | 'impuestos' | 'renta' | 'ingresos' | 'gastos' | 'clientes' | 'perfil'
 
-const MENU: { id: Pagina; nombre: string }[] = [
-  { id: 'resumen', nombre: 'Resumen' },
-  { id: 'informes', nombre: 'Informes' },
-  { id: 'impuestos', nombre: 'Impuestos' },
-  { id: 'renta', nombre: 'Renta' },
-  { id: 'ingresos', nombre: 'Ingresos' },
-  { id: 'gastos', nombre: 'Gastos' },
-  { id: 'clientes', nombre: 'Clientes' },
-  { id: 'perfil', nombre: 'Mi perfil' }
+const MENU: { id: Pagina; nombre: string; icono: NombreIcono }[] = [
+  { id: 'resumen', icono: 'inicio', nombre: 'Resumen' },
+  { id: 'informes', icono: 'informes', nombre: 'Informes' },
+  { id: 'impuestos', icono: 'impuestos', nombre: 'Impuestos' },
+  { id: 'renta', icono: 'renta', nombre: 'Renta' },
+  { id: 'ingresos', icono: 'ingresos', nombre: 'Ingresos' },
+  { id: 'gastos', icono: 'gastos', nombre: 'Gastos' },
+  { id: 'clientes', icono: 'clientes', nombre: 'Clientes' },
+  { id: 'perfil', icono: 'perfil', nombre: 'Mi perfil' }
 ]
 
 export function App() {
@@ -48,15 +49,21 @@ export function App() {
   return (
     <div className="app">
       <nav>
-        <div className="marca">Gestoría</div>
+        <div className="marca"><span className="logo"><Icono nombre="marca" tamano={18} /></span>Gestoría</div>
         {MENU.map((m) => (
           <button key={m.id} className={pagina === m.id ? 'activo' : ''} disabled={!perfil && m.id !== 'perfil'}
-            onClick={() => setPagina(m.id)}>
-            {m.nombre}
-            {m.id === 'impuestos' && pendientes > 0 ? <span className="insignia">{pendientes}</span> : null}
+            aria-current={pagina === m.id ? 'page' : undefined} onClick={() => setPagina(m.id)}>
+            <Icono nombre={m.icono} />
+            <span className="nombre">{m.nombre}</span>
+            {m.id === 'impuestos' && pendientes > 0 ? <span className="insignia" title={`${pendientes} modelo(s) pendientes`}>{pendientes}</span> : null}
           </button>
         ))}
-        {perfil ? <div className="pie">{perfil.nombre}<br />IAE {perfil.actividades.map((a) => a.codigo).join(', ')}</div> : null}
+        {perfil ? (
+          <div className="pie">
+            <span className="avatar">{perfil.nombre.trim().split(/\s+/).slice(0, 2).map((x) => x[0]?.toUpperCase()).join('')}</span>
+            <span><strong>{perfil.nombre}</strong><br />IAE {perfil.actividades.map((a) => a.codigo).join(', ')}</span>
+          </div>
+        ) : null}
       </nav>
       <main className="contenido">
         {!perfil ? <p className="avisos">Empieza rellenando tu perfil fiscal.</p> : null}

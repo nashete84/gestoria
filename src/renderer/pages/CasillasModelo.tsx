@@ -5,6 +5,7 @@ import { CASILLAS, NO_EUROS } from '../../core/modelos/descripciones'
 import type { AjustesModelos, ResultadoModelo } from '../../core/modelos/tipos'
 import { api, llamar, mensajes } from '../api'
 import { Avisos, Campo, CampoEuros, Errores, euros } from '../componentes'
+import { Icono } from '../iconos'
 
 export const MODELOS_CALCULADOS: Modelo[] = ['303', '130', '111', '115', '349', '390', '347']
 /** Modelos con fichero .txt según el diseño de registro oficial. */
@@ -83,7 +84,7 @@ export function CasillasModelo({ modelo, ejercicio, periodo }: { modelo: Modelo;
       ) : null}
       {CON_FICHERO.includes(modelo) ? (
         <div className="acciones">
-          <button onClick={descargar} disabled={r.sinActividad && SOLO_CON_DATOS.includes(modelo)}>Descargar .txt para la Sede</button>
+          <button onClick={descargar} disabled={r.sinActividad && SOLO_CON_DATOS.includes(modelo)}><Icono nombre="descargar" />Descargar .txt para la Sede</button>
           {guardado ? <span className="ok">Guardado en {guardado}</span> : null}
           {r.sinActividad ? <span className="nota">Sin operaciones no hay que presentarlo.</span> : null}
         </div>

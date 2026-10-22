@@ -6,6 +6,7 @@ import {
 import { api, llamar, mensajes } from '../api'
 import { Campo, CampoEuros, Errores, euros, hoy } from '../componentes'
 import { AjustesEjercicio, CasillasModelo, MODELOS_CALCULADOS } from './CasillasModelo'
+import { Icono } from '../iconos'
 
 const RESULTADOS: Record<Resultado, string> = {
   ingresar: 'A ingresar',
@@ -109,7 +110,7 @@ export function PaginaImpuestos({ onCambio }: { onCambio: () => void }) {
             <button className="secundario" onClick={() => setViendo(viendo === k ? null : k)}>{viendo === k ? 'Ocultar casillas' : 'Ver casillas'}</button>
           ) : null}
           {o.estado !== 'proximo' ? (
-            <button className="secundario" onClick={() => abrirMarcar(o, !!abierto)}>Marcar como presentado</button>
+            <button className="secundario" onClick={() => abrirMarcar(o, !!abierto)}><Icono nombre="guardar" />Marcar como presentado</button>
           ) : null}
         </div>
         {viendo === k ? <div className="marcar"><CasillasModelo key={version} modelo={o.modelo} ejercicio={o.ejercicio} periodo={o.periodo} /></div> : null}
@@ -178,7 +179,7 @@ export function PaginaImpuestos({ onCambio }: { onCambio: () => void }) {
                 <td>{RESULTADOS[p.resultado]}</td>
                 <td className="num">{euros(p.importe)}</td>
                 <td>{p.justificante}</td>
-                <td className="derecha"><button className="peligro" onClick={() => deshacer(p.id)}>Deshacer</button></td>
+                <td className="derecha"><button className="peligro" onClick={() => deshacer(p.id)}><Icono nombre="deshacer" />Deshacer</button></td>
               </tr>
             )
           })}

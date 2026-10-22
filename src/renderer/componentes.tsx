@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from 'react'
 import type { Adjunto } from '../core/tipos'
 import { formatearEuros, parsearEuros } from '../core/money'
 import { rangoPeriodo } from '../core/periodos'
+import { Icono } from './iconos'
 import { api, llamar, mensajes } from './api'
 
 export function Errores({ errores }: { errores: string[] }) {
@@ -106,10 +107,10 @@ export function Adjuntos({ entidad, id }: { entidad: Adjunto['entidad']; id: num
       {lista.map((a) => (
         <span key={a.id} className="adjunto">
           <button className="enlace" onClick={() => accion(llamar(api.abrirAdjunto(a.id)))}>{a.nombre}</button>
-          <button className="mini" title="Quitar" onClick={() => accion(llamar(api.borrarAdjunto(a.id)))}>×</button>
+          <button className="mini" title="Quitar" aria-label="Quitar" onClick={() => accion(llamar(api.borrarAdjunto(a.id)))}><Icono nombre="cerrar" tamano={14} /></button>
         </span>
       ))}
-      <button className="secundario" onClick={() => accion(llamar(api.adjuntar(entidad, id)))}>Adjuntar justificante</button>
+      <button className="secundario" onClick={() => accion(llamar(api.adjuntar(entidad, id)))}><Icono nombre="adjuntar" />Adjuntar justificante</button>
     </div>
   )
 }
@@ -125,12 +126,12 @@ export function AdjuntosPendientes({ archivos, onChange }: { archivos: ArchivoEl
       {archivos.map((a) => (
         <span key={a.ficha} className="adjunto">
           📎 {a.nombre}
-          <button className="mini" title="Quitar" onClick={() => onChange(archivos.filter((x) => x.ficha !== a.ficha))}>×</button>
+          <button className="mini" title="Quitar" aria-label="Quitar" onClick={() => onChange(archivos.filter((x) => x.ficha !== a.ficha))}><Icono nombre="cerrar" tamano={14} /></button>
         </span>
       ))}
       <button className="secundario" onClick={() =>
         llamar(api.elegirArchivos()).then((n) => onChange([...archivos, ...n])).catch((e) => setErrores(mensajes(e)))}>
-        Adjuntar factura
+        <Icono nombre="adjuntar" />Adjuntar factura
       </button>
       {archivos.length ? <small className="nota">Se guardarán con el gasto.</small> : null}
     </div>

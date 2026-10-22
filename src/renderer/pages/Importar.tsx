@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { ResultadoImportacion, VistaImportacion } from '../../core/db/importacion'
 import { api, llamar, mensajes } from '../api'
 import { Errores, euros } from '../componentes'
+import { Icono } from '../iconos'
 
 /** Importa el histórico exportado de Declarando: primero enseña lo que va a entrar y luego lo importa. */
 export function ImportarHistorico() {
@@ -48,7 +49,7 @@ export function ImportarHistorico() {
         Descarga en Declarando tus listados, libros contables, facturas y justificantes (vienen en varios ZIP) y elígelos todos a la vez.
         Antes de importar verás lo que va a entrar. No se envía nada a Hacienda.
       </p>
-      {!vista ? <div className="acciones"><button className="secundario" disabled={ocupado} onClick={elegir}>{ocupado ? 'Leyendo…' : 'Elegir archivos de Declarando…'}</button></div> : null}
+      {!vista ? <div className="acciones"><button className="secundario" disabled={ocupado} onClick={elegir}><Icono nombre="subir" />{ocupado ? 'Leyendo…' : 'Elegir archivos de Declarando…'}</button></div> : null}
       <Errores errores={errores} />
 
       {hecho ? (
@@ -100,7 +101,7 @@ export function ImportarHistorico() {
             Las facturas emitidas en la app y sus registros VERI*FACTU no se borran.
           </label>
           <div className="acciones">
-            <button disabled={ocupado} onClick={importar}>{ocupado ? 'Importando…' : `Importar ${totales.ingresos} ingresos y ${totales.gastos} gastos`}</button>
+            <button disabled={ocupado} onClick={importar}><Icono nombre="subir" />{ocupado ? 'Importando…' : `Importar ${totales.ingresos} ingresos y ${totales.gastos} gastos`}</button>
             <button className="secundario" disabled={ocupado} onClick={() => setVista(null)}>Cancelar</button>
           </div>
         </>

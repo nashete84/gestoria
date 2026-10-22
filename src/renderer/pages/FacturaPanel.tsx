@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import type { DetalleFactura } from '../../core/db/facturas'
 import { api, llamar, mensajes } from '../api'
 import { Errores, euros } from '../componentes'
+import { Icono } from '../iconos'
 
 const ESTADO_ENVIO = {
   pendiente: 'No enviado',
@@ -56,7 +57,7 @@ export function FacturaPanel({ facturaId, onAnulada }: { facturaId: number; onAn
           <div className="nota">Total a pagar {euros(f.base + f.cuotaIva - f.cuotaRetencion)}</div>
         </div>
         <div className="acciones">
-          <button disabled={ocupado} onClick={() => accion(() => llamar(api.guardarPdfFactura(f.id)))}>Descargar PDF</button>
+          <button disabled={ocupado} onClick={() => accion(() => llamar(api.guardarPdfFactura(f.id)))}><Icono nombre="descargar" />Descargar PDF</button>
           <button className="secundario" disabled={ocupado} onClick={() => accion(async () => setXml(xml ? null : await llamar(api.xmlVerifactu(f.id))))}>
             {xml ? 'Ocultar XML' : 'Ver XML VERI*FACTU'}
           </button>

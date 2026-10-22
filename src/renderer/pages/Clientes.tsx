@@ -3,6 +3,7 @@ import { ambitoDePais } from '../../core/fiscalidad'
 import type { Cliente, ClienteNuevo } from '../../core/tipos'
 import { api, llamar, mensajes } from '../api'
 import { Campo, Errores } from '../componentes'
+import { BotonIcono, Icono } from '../iconos'
 
 const VACIO: ClienteNuevo = {
   tipo: 'empresa', nombre: '', nif: '', pais: 'ES', domicilio: '', codigoPostal: '',
@@ -51,7 +52,7 @@ export function PaginaClientes() {
     <section>
       <div className="cabecera">
         <h1>Clientes</h1>
-        <button onClick={() => { setEditando({ id: null, datos: VACIO }); setErrores([]) }}>Nuevo cliente</button>
+        <button onClick={() => { setEditando({ id: null, datos: VACIO }); setErrores([]) }}><Icono nombre="mas" />Nuevo cliente</button>
       </div>
       <Errores errores={errores} />
 
@@ -79,7 +80,7 @@ export function PaginaClientes() {
             <Campo etiqueta="Notas"><input value={d.notas} onChange={(e) => set('notas', e.target.value)} /></Campo>
           </div>
           <div className="acciones">
-            <button onClick={guardar}>Guardar</button>
+            <button onClick={guardar}><Icono nombre="guardar" />Guardar</button>
             <button className="secundario" onClick={() => setEditando(null)}>Cancelar</button>
           </div>
         </div>
@@ -95,8 +96,8 @@ export function PaginaClientes() {
               <td>{AMBITO[ambitoDePais(c.pais)]} ({c.pais})</td>
               <td>{c.tipo === 'empresa' ? 'Empresa' : 'Particular'}</td>
               <td className="derecha">
-                <button className="secundario" onClick={() => { const { id, ...datos } = c; setEditando({ id, datos }) }}>Editar</button>
-                <button className="peligro" onClick={() => borrar(c)}>Borrar</button>
+                <BotonIcono icono="editar" texto="Editar" onClick={() => { const { id, ...datos } = c; setEditando({ id, datos }) }} />
+                <BotonIcono icono="borrar" texto="Borrar" peligro onClick={() => borrar(c)} />
               </td>
             </tr>
           ))}

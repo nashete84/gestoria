@@ -202,3 +202,5 @@ Los gastos ya guardados no se recalculan. Descartado: una tabla completa por ep�
 - La importación real de Nacho se hizo en su Mac (con copia de seguridad), y el resultado coincide con el de este importador: 29 ingresos y 45 gastos.
 
 **Resumen, Ingresos y Gastos se abren con el año entero (2026-10-22, a petición de Nacho)**, en vez del trimestre en curso. El trimestre se sigue pudiendo elegir en el selector.
+
+**Rediseño visual con iconos (2026-10-22, a petición de Nacho).** Iconos de línea con los trazos de Lucide (licencia ISC) dentro de la app como SVG, sin dependencia ni descarga: heredan el color y funcionan en modo claro y oscuro. Menú lateral con iconos, logo y avatar; tarjetas del Resumen con icono; botones principales con icono y texto; acciones de cada fila (editar, duplicar, borrar, PDF) como botones de icono con su nombre en la ayuda y para lectores de pantalla. Estilo: esquinas de 12 px, sombras suaves, cabeceras de tabla en versalitas, fila resaltada al pasar el ratón y anillo de foco visible. Descartados: la librería lucide-react (otra dependencia para unos 30 iconos) y emojis (se ven distintos en cada sistema).

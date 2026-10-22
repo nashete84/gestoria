@@ -5,6 +5,7 @@ import { api, llamar, mensajes } from '../api'
 import { Campo, Errores, hoy } from '../componentes'
 import { EditorActividades } from './Actividades'
 import { ImportarHistorico } from './Importar'
+import { Icono } from '../iconos'
 
 const VACIO: Perfil = {
   nif: '', nombre: '', domicilio: '', codigoPostal: '', municipio: 'Madrid', provincia: 'Madrid',
@@ -113,9 +114,9 @@ export function PaginaPerfil({ onGuardado }: { onGuardado: (p: Perfil) => void }
       </p>
 
       <div className="acciones">
-        <button onClick={guardar}>Guardar perfil</button>
+        <button onClick={guardar}><Icono nombre="guardar" />Guardar perfil</button>
         {guardado ? <span className="ok">Guardado</span> : null}
-        <button className="secundario" onClick={() => llamar(api.abrirCarpetaDatos())}>Abrir carpeta de datos</button>
+        <button className="secundario" onClick={() => llamar(api.abrirCarpetaDatos())}><Icono nombre="carpeta" />Abrir carpeta de datos</button>
       </div>
 
       {p.nif ? (
