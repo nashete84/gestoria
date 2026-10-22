@@ -10,6 +10,7 @@ import type { Modelo, Periodo } from './calendario'
 import type { DatosRenta } from './renta/calculo'
 import type { InformeImpuestos, InformeIngresosGastos } from './informes'
 import type { Prevision } from './prevision'
+import type { ResultadoImportacion, VistaImportacion } from './db/importacion'
 import type { EntradaSimulador, ResultadoSimulador } from './simulador'
 import type {
   Adjunto, Cliente, ClienteNuevo, Gasto, GastoNuevo, Ingreso, IngresoNuevo, Perfil
@@ -94,6 +95,11 @@ export interface ApiGestoria {
   /** Responde una duda general; los trozos de la respuesta llegan como eventos con el mismo id. */
   preguntarAsistente(id: string, pregunta: string, historial: MensajeChat[]): Promise<Resultado<RespuestaAsistente>>
   cancelarPreguntaAsistente(id: string): Promise<Resultado<void>>
+
+  /** Elige los ZIP (o carpetas) exportados de Declarando y prepara la importación; null si se cancela. */
+  analizarImportacion(): Promise<Resultado<VistaImportacion | null>>
+  /** Importa lo preparado. Con borrarAntes, guarda antes una copia de la base de datos y borra ingresos y gastos. */
+  confirmarImportacion(opciones: { borrarAntes: boolean; paises: Record<string, string> }): Promise<Resultado<ResultadoImportacion & { copia: string | null }>>
 }
 
 /** Eventos que el proceso principal envía a la interfaz. */
@@ -115,5 +121,6 @@ export const METODOS_API = [
   'estimacionRenta', 'guardarDatosRenta',
   'calcularModelo', 'guardarFicheroModelo', 'leerAjustesModelos', 'guardarAjustesModelos',
   'abrirCarpetaDatos', 'informeIngresosGastos', 'informeImpuestos', 'informePrevision', 'simularIrpf', 'ingresosConRetencion',
-  'estadoAsistente', 'descargarModeloAsistente', 'cancelarDescargaAsistente', 'preguntarAsistente', 'cancelarPreguntaAsistente'
+  'estadoAsistente', 'descargarModeloAsistente', 'cancelarDescargaAsistente', 'preguntarAsistente', 'cancelarPreguntaAsistente',
+  'analizarImportacion', 'confirmarImportacion'
 ] as const satisfies readonly (keyof ApiGestoria)[]

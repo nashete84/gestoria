@@ -4,6 +4,7 @@ import type { Perfil } from '../../core/tipos'
 import { api, llamar, mensajes } from '../api'
 import { Campo, Errores, hoy } from '../componentes'
 import { EditorActividades } from './Actividades'
+import { ImportarHistorico } from './Importar'
 
 const VACIO: Perfil = {
   nif: '', nombre: '', domicilio: '', codigoPostal: '', municipio: 'Madrid', provincia: 'Madrid',
@@ -116,6 +117,13 @@ export function PaginaPerfil({ onGuardado }: { onGuardado: (p: Perfil) => void }
         {guardado ? <span className="ok">Guardado</span> : null}
         <button className="secundario" onClick={() => llamar(api.abrirCarpetaDatos())}>Abrir carpeta de datos</button>
       </div>
+
+      {p.nif ? (
+        <>
+          <h2>Importar histórico de Declarando</h2>
+          <ImportarHistorico />
+        </>
+      ) : null}
     </section>
   )
 }

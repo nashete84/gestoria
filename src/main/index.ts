@@ -1,6 +1,6 @@
 import Database from 'better-sqlite3'
 import { app, BrowserWindow, dialog, ipcMain, Notification, shell } from 'electron'
-import { writeFile } from 'node:fs/promises'
+import { mkdir, writeFile } from 'node:fs/promises'
 import { randomUUID } from 'node:crypto'
 import { basename, join, resolve, sep } from 'node:path'
 import type { ApiGestoria, Resultado } from '../core/api'
@@ -8,6 +8,9 @@ import * as facturas from '../core/db/facturas'
 import * as modelos from '../core/db/modelos'
 import * as renta from '../core/db/renta'
 import * as informes from '../core/db/informes'
+import * as importacion from '../core/db/importacion'
+import { analizarDeclarando, type PlanImportacion } from '../core/importacion/declarando'
+import { guardarAdjuntoImportado, leerOrigenes, textoPdf } from './importar'
 import * as repos from '../core/db/repos'
 import { htmlFactura } from '../core/plantillaFactura'
 import { ENVIO_HABILITADO } from '../core/verifactu'
@@ -226,8 +229,52 @@ const handlers: Handlers = {
   },
   cancelarPreguntaAsistente: async (idPregunta) => {
     preguntas.get(String(idPregunta))?.abort()
+  },
+
+  analizarImportacion: async () => {
+    const r = await dialog.showOpenDialog(ventana!, {
+      title: 'Importar histórico de Declarando',
+      message: 'Elige los ZIP que descargaste de Declarando (o las carpetas descomprimidas).',
+      properties: ['openFile', 'openDirectory', 'multiSelections'],
+      filters: [{ name: 'Exportación de Declarando', extensions: ['zip', 'csv', 'pdf', 'jpg', 'jpeg', 'png'] }]
+    })
+    if (r.canceled || !r.filePaths.length) return null
+    let plan: PlanImportacion
+    try {
+      plan = analizarDeclarando(await leerOrigenes(r.filePaths), { extraerTexto: textoPdf })
+    } catch (e) {
+      throw new repos.ErrorValidacion([e instanceof Error ? e.message : String(e)])
+    }
+    importacionPendiente = plan
+    return importacion.vistaImportacion(db, plan)
+  },
+  confirmarImportacion: async (opciones) => {
+    const plan = importacionPendiente
+    if (!plan) throw new repos.ErrorValidacion(['Vuelve a elegir los archivos para importar.'])
+    const borrarAntes = opciones?.borrarAntes === true
+    const paises: Record<string, string> = {}
+    for (const [k, v] of Object.entries(opciones?.paises ?? {})) if (typeof v === 'string') paises[k] = v
+    // Copia de seguridad antes de borrar nada: la base de datos completa, con fecha y hora.
+    let copia: string | null = null
+    if (borrarAntes) {
+      const carpeta = join(carpetaDatos(), 'copias')
+      await mkdir(carpeta, { recursive: true })
+      copia = join(carpeta, `gestoria-${new Date().toISOString().replace(/[:.]/g, '-')}.sqlite`)
+      await db.backup(copia)
+    }
+    // Los archivos se guardan antes de la transacción (es asíncrono); si luego falla, solo quedan copias sin usar.
+    const guardados = new Map<object, importacion.ArchivoGuardado>()
+    for (const x of [...plan.ingresos, ...plan.gastos]) {
+      if (x.adjunto) guardados.set(x.adjunto, await guardarAdjuntoImportado(x.adjunto.datos, x.adjunto.nombre, carpetaAdjuntos()))
+    }
+    const resultado = importacion.aplicarImportacion(db, plan, { borrarAntes, paises }, guardados)
+    importacionPendiente = null
+    return { ...resultado, copia }
   }
 }
+
+/** Plan de importación analizado, a la espera de que el usuario lo confirme. */
+let importacionPendiente: PlanImportacion | null = null
 
 /** Archivos elegidos en el diálogo a la espera de que se guarde el ingreso o gasto. */
 const elegidos = new Map<string, string>()
