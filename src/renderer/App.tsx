@@ -5,6 +5,7 @@ import { resumirCobros } from '../core/cobros'
 import { Errores, hoy } from './componentes'
 import { Icono, type NombreIcono } from './iconos'
 import { ChatAsistente } from './pages/Asistente'
+import { PaginaBanco } from './pages/Banco'
 import { PaginaClientes } from './pages/Clientes'
 import { PaginaGastos } from './pages/Gastos'
 import { PaginaImpuestos } from './pages/Impuestos'
@@ -14,7 +15,7 @@ import { PaginaPerfil } from './pages/Perfil'
 import { PaginaRenta } from './pages/Renta'
 import { PaginaResumen } from './pages/Resumen'
 
-type Pagina = 'resumen' | 'informes' | 'impuestos' | 'renta' | 'ingresos' | 'gastos' | 'clientes' | 'perfil'
+type Pagina = 'resumen' | 'informes' | 'impuestos' | 'renta' | 'ingresos' | 'gastos' | 'banco' | 'clientes' | 'perfil'
 
 const MENU: { id: Pagina; nombre: string; icono: NombreIcono }[] = [
   { id: 'resumen', icono: 'inicio', nombre: 'Resumen' },
@@ -23,6 +24,7 @@ const MENU: { id: Pagina; nombre: string; icono: NombreIcono }[] = [
   { id: 'renta', icono: 'renta', nombre: 'Renta' },
   { id: 'ingresos', icono: 'ingresos', nombre: 'Ingresos' },
   { id: 'gastos', icono: 'gastos', nombre: 'Gastos' },
+  { id: 'banco', icono: 'banco', nombre: 'Banco' },
   { id: 'clientes', icono: 'clientes', nombre: 'Clientes' },
   { id: 'perfil', icono: 'perfil', nombre: 'Mi perfil' }
 ]
@@ -79,6 +81,7 @@ export function App() {
         {perfil && pagina === 'renta' ? <PaginaRenta /> : null}
         {perfil && pagina === 'ingresos' ? <PaginaIngresos perfil={perfil} onCambioCobros={contarCobros} /> : null}
         {perfil && pagina === 'gastos' ? <PaginaGastos perfil={perfil} /> : null}
+        {perfil && pagina === 'banco' ? <PaginaBanco onCambio={contarCobros} /> : null}
         {perfil && pagina === 'clientes' ? <PaginaClientes /> : null}
       </main>
       <ChatAsistente />

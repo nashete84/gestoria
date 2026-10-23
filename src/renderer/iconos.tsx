@@ -31,6 +31,7 @@ const TRAZOS = {
   enviar: 'M22 2L11 13M22 2l-7 20-4-9-9-4z',
   deshacer: 'M3 7v6h6M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13',
   chat: 'M7.9 20A9 9 0 1 0 4 16.1L2 22z',
+  banco: 'M2 5h20v14H2zM2 10h20M6 15h4',
   repetir: 'M17 1l4 4-4 4M3 11V9a4 4 0 0 1 4-4h14M7 23l-4-4 4-4M21 13v2a4 4 0 0 1-4 4H3',
   pausa: 'M6 4h4v16H6zM14 4h4v16h-4z',
   cobrado: 'M22 11.08V12a10 10 0 1 1-5.93-9.14M22 4L12 14.01l-3-3',

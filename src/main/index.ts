@@ -1,6 +1,6 @@
 import Database from 'better-sqlite3'
 import { app, BrowserWindow, dialog, ipcMain, Notification, shell } from 'electron'
-import { mkdir, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { randomUUID } from 'node:crypto'
 import { basename, join, resolve, sep } from 'node:path'
 import type { ApiGestoria, Resultado } from '../core/api'
@@ -10,6 +10,8 @@ import * as renta from '../core/db/renta'
 import * as informes from '../core/db/informes'
 import * as importacion from '../core/db/importacion'
 import * as recurrentes from '../core/db/recurrentes'
+import * as banco from '../core/db/banco'
+import { leerExtracto } from '../core/banco/lectura'
 import { librosRegistro } from '../core/db/libros'
 import { csvLibro } from '../core/libros'
 import { escribirXlsx } from '../core/xlsx'
@@ -289,6 +291,25 @@ const handlers: Handlers = {
     preguntas.get(String(idPregunta))?.abort()
   },
 
+  analizarBanco: async () => {
+    const r = await dialog.showOpenDialog(ventana!, {
+      title: 'Importar extracto del banco',
+      message: 'Elige el extracto en Norma 43 (cuaderno 43) o en CSV.',
+      properties: ['openFile'],
+      filters: [{ name: 'Extracto bancario', extensions: ['n43', 'q43', 'aeb', 'txt', 'csv', 'dat'] }]
+    })
+    if (r.canceled || !r.filePaths.length) return null
+    const datos = await readFile(r.filePaths[0]!)
+    if (datos.length > 20 * 1024 * 1024) throw new repos.ErrorValidacion(['El extracto es demasiado grande.'])
+    let movimientos
+    try {
+      movimientos = leerExtracto(new Uint8Array(datos))
+    } catch (e) {
+      throw new repos.ErrorValidacion([e instanceof Error ? e.message : String(e)])
+    }
+    return banco.vistaBanco(db, movimientos)
+  },
+  aplicarBanco: (d) => banco.aplicarBanco(db, d),
   analizarImportacion: async () => {
     const r = await dialog.showOpenDialog(ventana!, {
       title: 'Importar histórico de Declarando',

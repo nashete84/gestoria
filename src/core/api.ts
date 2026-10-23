@@ -14,6 +14,7 @@ import type { ResultadoImportacion, VistaImportacion } from './db/importacion'
 import type { EntradaSimulador, ResultadoSimulador } from './simulador'
 import type { Recurrente, RecurrenteNuevo } from './recurrentes'
 import type { ResultadoRecurrentes } from './db/recurrentes'
+import type { DecisionBanco, ResultadoBanco, VistaBanco } from './db/banco'
 import type {
   Adjunto, Cliente, ClienteNuevo, Gasto, GastoNuevo, Ingreso, IngresoNuevo, Perfil
 } from './tipos'
@@ -114,6 +115,9 @@ export interface ApiGestoria {
   cancelarPreguntaAsistente(id: string): Promise<Resultado<void>>
 
   /** Elige los ZIP (o carpetas) exportados de Declarando y prepara la importación; null si se cancela. */
+  /** Abre un extracto del banco (Norma 43 o CSV) y propone qué hacer con cada movimiento. */
+  analizarBanco(): Promise<Resultado<VistaBanco | null>>
+  aplicarBanco(decisiones: DecisionBanco[]): Promise<Resultado<ResultadoBanco>>
   analizarImportacion(): Promise<Resultado<VistaImportacion | null>>
   /** Importa lo preparado. Con borrarAntes, guarda antes una copia de la base de datos y borra ingresos y gastos. */
   confirmarImportacion(opciones: { borrarAntes: boolean; paises: Record<string, string> }): Promise<Resultado<ResultadoImportacion & { copia: string | null }>>
@@ -140,5 +144,5 @@ export const METODOS_API = [
   'calcularModelo', 'guardarFicheroModelo', 'exportarLibros', 'leerAjustesModelos', 'guardarAjustesModelos',
   'abrirCarpetaDatos', 'informeIngresosGastos', 'informeImpuestos', 'informePrevision', 'simularIrpf', 'ingresosConRetencion',
   'estadoAsistente', 'descargarModeloAsistente', 'cancelarDescargaAsistente', 'preguntarAsistente', 'cancelarPreguntaAsistente',
-  'analizarImportacion', 'confirmarImportacion'
+  'analizarImportacion', 'confirmarImportacion', 'analizarBanco', 'aplicarBanco'
 ] as const satisfies readonly (keyof ApiGestoria)[]

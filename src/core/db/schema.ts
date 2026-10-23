@@ -169,6 +169,20 @@ const MIGRACIONES: string[] = [
     ultima TEXT,
     activa INTEGER NOT NULL DEFAULT 1
   );
+  `,
+  // Movimientos del banco ya importados (para no repetirlos) y qué se hizo con cada uno.
+  `
+  CREATE TABLE movimientos_banco (
+    id INTEGER PRIMARY KEY,
+    clave TEXT NOT NULL UNIQUE,
+    fecha TEXT NOT NULL,
+    importe INTEGER NOT NULL,
+    concepto TEXT NOT NULL,
+    accion TEXT NOT NULL,
+    ingreso_id INTEGER,
+    gasto_id INTEGER,
+    importado TEXT NOT NULL DEFAULT (datetime('now'))
+  );
   `
 ]
 

@@ -180,3 +180,4 @@ p.ahorro { color: var(--suave); }
 p.ahorro strong { color: #2a9d55; }
 p.ahorro .icono { vertical-align: -2px; color: #2a9d55; }
 tr.resaltada td { background: var(--acento-suave); font-weight: 600; }
+tr.apagada td { color: var(--suave); }

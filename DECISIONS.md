@@ -248,3 +248,12 @@ En Informes → Cuota de autónomos: rendimiento neto mensual para la Seguridad 
 - **Rendimiento:** (ingresos − gastos deducibles + cuotas de autónomo) − 7 % de gastos genéricos, entre 12; ingresos y gastos de la previsión del año (lo registrado + la media de los meses que faltan). Las cuotas del año = la última cuota × 12.
 - **Regularización:** si tu base está por debajo de la mínima del tramo, pagas la diferencia × tipo × 12; si está por encima de la máxima, te la devuelven. Es aproximada: supone la misma base todo el año.
 - Descartados: tarifa plana y autónomo societario (3 %) en la pantalla (no es su caso; la función ya admite el 3 %).
+
+## Importar movimientos del banco (2026-10-23, a petición de Nacho)
+
+Nueva sección **Banco**: eliges el extracto, la app propone qué hacer con cada movimiento y no aplica nada hasta pulsar Aplicar (todo en una transacción).
+- **Formatos:** Norma 43 / cuaderno 43 de la AEB (registros 22 y 23; casi todos los bancos españoles lo exportan) y CSV con columnas de fecha, concepto e importe (o cargo y abono), separador ; , o tabulador, importes "1.234,56" o "1234.56", y filas de cabecera previas. Latin-1 o UTF-8. Descartados: Excel de cada banco (cada uno distinto; CSV y Norma 43 cubren todos) y conexión directa al banco (PSD2 exige un agregador de pago y mandar tus datos a un tercero).
+- **Abonos:** se proponen como cobro del ingreso pendiente por el mismo importe (base + IVA − retención) emitido hasta 6 meses antes, el de vencimiento más cercano. Se puede elegir otro ingreso pendiente o ignorar. No se crean ingresos desde el banco: un ingreso necesita cliente, IVA y retención que el extracto no trae.
+- **Cargos:** si ya hay un gasto por lo mismo que se pagó (±10 días) se reconoce; si el concepto es de un proveedor conocido (Seguridad Social, Movistar, Iberdrola, Google...) se propone crearlo con esa categoría; lo demás se ignora por defecto, porque la cuenta puede ser mixta y no queremos meter gastos personales. Pagos a Hacienda y traspasos nunca se proponen como gasto.
+- **Gasto creado:** base sacada del total con el IVA y la retención habituales de la categoría, % deducibles de tu actividad, y una nota para revisarlo con la factura.
+- **Sin repetir:** cada movimiento se guarda (fecha, importe, concepto y nº de repetición) con lo que se hizo; al importar otro extracto que se solape, los ya vistos salen como "Ya importado".
