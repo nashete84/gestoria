@@ -8,6 +8,7 @@ import {
 } from '../componentes'
 import { BotonIcono, Icono } from '../iconos'
 import { FormRecurrente, PanelRecurrentes, textoGenerados } from './Recurrentes'
+import { ahorroGasto } from '../../core/ahorro'
 
 const OPERACIONES: Record<OperacionGasto, string> = {
   nacional: 'Proveedor español con IVA',
@@ -48,6 +49,18 @@ export function PaginaGastos({ perfil }: { perfil: Perfil }) {
     llamar(api.generarRecurrentes()).then((r) => { const t = textoGenerados(r); if (t) { setHecho(t); void cargar() } }).catch(() => {})
   }, [])
 
+  // Tipo marginal de IRPF por año (de la previsión), para calcular el ahorro de cada gasto.
+  const [marginales, setMarginales] = useState<Record<number, number>>({})
+  const anios = [...new Set([periodo.anio, ...(editando ? [Number(editando.datos.fecha.slice(0, 4))] : [])])].filter((a) => a > 2000 && !(a in marginales))
+  useEffect(() => {
+    for (const a of anios) {
+      llamar(api.informePrevision(a, hoy()))
+        .then((p) => setMarginales((m) => ({ ...m, [a]: p.simulacion.tipoMarginal })))
+        .catch(() => setMarginales((m) => ({ ...m, [a]: 0 })))
+    }
+  }, [anios.join(',')]) // eslint-disable-line react-hooks/exhaustive-deps
+  const ahorro = (g: GastoNuevo) => ahorroGasto(g, marginales[Number(g.fecha.slice(0, 4))] ?? 0)
+
   const d = editando?.datos
   const set = (cambios: Partial<GastoNuevo>) =>
     editando && setEditando({ ...editando, datos: { ...editando.datos, ...cambios } })
@@ -86,6 +99,7 @@ export function PaginaGastos({ perfil }: { perfil: Perfil }) {
   const cuotas = d ? calcularGasto(d) : null
   const nombreCategoria = (id: string) => CATEGORIAS_GASTO.find((c) => c.id === id)?.nombre ?? id
   const total = (k: 'base' | 'cuotaIva') => gastos.reduce((a, g) => a + g[k], 0)
+  const totalAhorro = gastos.reduce((a, g) => a + ahorro(g).total, 0)
 
   return (
     <section>
@@ -160,6 +174,17 @@ export function PaginaGastos({ perfil }: { perfil: Perfil }) {
               {cuotas.cuotaRetencion ? ` · Retención a ingresar ${euros(cuotas.cuotaRetencion)}` : ''}
             </p>
           ) : null}
+          {d.base > 0 ? (() => {
+            const a = ahorro(d)
+            const tipo = marginales[Number(d.fecha.slice(0, 4))]
+            return (
+              <p className="nota ahorro">
+                <Icono nombre="cartera" tamano={14} /> Este gasto te ahorra <strong>{euros(a.total)}</strong> en impuestos:
+                {' '}{euros(a.iva)} de IVA en el 303 y {euros(a.irpf)} de IRPF{tipo ? ` (a tu tipo marginal del ${tipo.toLocaleString('es-ES')} %)` : ' (sin previsión de renta para ese año)'}
+                {d.bienInversion ? ', repartido en los años de amortización' : ''}. Te cuesta de verdad {euros(a.costeReal)}.
+              </p>
+            )
+          })() : null}
           {editando.id !== null
             ? <Adjuntos entidad="gasto" id={editando.id} />
             : <AdjuntosPendientes archivos={pendientes} onChange={setPendientes} />}
@@ -171,7 +196,7 @@ export function PaginaGastos({ perfil }: { perfil: Perfil }) {
       ) : null}
 
       <table>
-        <thead><tr><th>Fecha</th><th>Proveedor</th><th>Concepto</th><th>Categoría</th><th className="num">Base</th><th className="num">IVA</th><th /></tr></thead>
+        <thead><tr><th>Fecha</th><th>Proveedor</th><th>Concepto</th><th>Categoría</th><th className="num">Base</th><th className="num">IVA</th><th className="num" title="IVA que recuperas + IRPF que dejas de pagar, a tu tipo marginal">Ahorro</th><th /></tr></thead>
         <tbody>
           {gastos.map((g) => (
             <tr key={g.id}>
@@ -181,6 +206,7 @@ export function PaginaGastos({ perfil }: { perfil: Perfil }) {
               <td>{nombreCategoria(g.categoria)}{g.bienInversion ? ' · inversión' : ''}</td>
               <td className="num">{euros(g.base)}</td>
               <td className="num">{euros(g.cuotaIva)}</td>
+              <td className="num ahorro">{euros(ahorro(g).total)}</td>
               <td className="derecha">
                 <BotonIcono icono="editar" texto="Editar" onClick={() => { const { id, cuotaIva: _a, cuotaRetencion: _b, ...datos } = g; setEditando({ id, datos }) }} />
                 <BotonIcono icono="duplicar" texto="Duplicar con otra fecha" onClick={() => {
@@ -193,9 +219,9 @@ export function PaginaGastos({ perfil }: { perfil: Perfil }) {
               </td>
             </tr>
           ))}
-          {!gastos.length ? <tr><td colSpan={7} className="vacio">No hay gastos en este periodo.</td></tr> : null}
+          {!gastos.length ? <tr><td colSpan={8} className="vacio">No hay gastos en este periodo.</td></tr> : null}
         </tbody>
-        <tfoot><tr><td colSpan={4}>Total</td><td className="num">{euros(total('base'))}</td><td className="num">{euros(total('cuotaIva'))}</td><td /></tr></tfoot>
+        <tfoot><tr><td colSpan={4}>Total</td><td className="num">{euros(total('base'))}</td><td className="num">{euros(total('cuotaIva'))}</td><td className="num ahorro">{euros(totalAhorro)}</td><td /></tr></tfoot>
       </table>
 
       <PanelRecurrentes tipo="gasto" version={versionRec} onCambio={cargar} />
