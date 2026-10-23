@@ -15,8 +15,8 @@ export function librosRegistro(db: Db, ejercicio: number, trimestre: number): { 
   if (!Number.isInteger(trimestre) || trimestre < 0 || trimestre > 4) throw new ErrorValidacion(['Periodo no válido.'])
   const desde = `${ejercicio}-01-01`
   const hasta = `${ejercicio}-${['12-31', '03-31', '06-30', '09-30', '12-31'][trimestre]}`
-  const facturas = new Map<number, string>()
-  for (const f of listarFacturas(db, desde, `${ejercicio + 1}-12-31`)) if (f.ingresoId !== null && f.estado === 'emitida') facturas.set(f.ingresoId, f.numSerie)
+  const facturas = new Map<number, { numSerie: string; tipo: string }>()
+  for (const f of listarFacturas(db, desde, `${ejercicio + 1}-12-31`)) if (f.ingresoId !== null && f.estado === 'emitida') facturas.set(f.ingresoId, { numSerie: f.numSerie, tipo: f.tipo })
   const hojas = hojasLibros({
     perfil, clientes: listarClientes(db), facturas, ingresos: listarIngresos(db, desde, hasta), gastos: listarGastos(db, desde, hasta)
   })

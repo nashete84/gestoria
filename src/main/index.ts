@@ -217,6 +217,7 @@ const handlers: Handlers = {
     return guardarPdf(d, `Borrador factura ${d.factura.numSerie}.pdf`)
   },
   xmlVerifactu: (i) => facturas.xmlEnvio(db, id(i)),
+  rectificarFactura: (i, d) => facturas.rectificarFactura(db, id(i), d, hoyLocal()),
   anularFactura: async (i) => {
     const ingresoId = facturas.leerFactura(db, id(i))?.ingresoId
     const adj = ingresoId ? repos.listarAdjuntos(db, 'ingreso', ingresoId) : []

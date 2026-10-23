@@ -257,3 +257,13 @@ Nueva sección **Banco**: eliges el extracto, la app propone qué hacer con cada
 - **Cargos:** si ya hay un gasto por lo mismo que se pagó (±10 días) se reconoce; si el concepto es de un proveedor conocido (Seguridad Social, Movistar, Iberdrola, Google...) se propone crearlo con esa categoría; lo demás se ignora por defecto, porque la cuenta puede ser mixta y no queremos meter gastos personales. Pagos a Hacienda y traspasos nunca se proponen como gasto.
 - **Gasto creado:** base sacada del total con el IVA y la retención habituales de la categoría, % deducibles de tu actividad, y una nota para revisarlo con la factura.
 - **Sin repetir:** cada movimiento se guarda (fecha, importe, concepto y nº de repetición) con lo que se hizo; al importar otro extracto que se solape, los ya vistos salen como "Ya importado".
+
+## Facturas rectificativas (2026-10-23, a petición de Nacho)
+
+Botón "Rectificar" en el panel de una factura emitida: eliges R1 (error, descuento, devolución o impago: art. 80 LIVA) o R4 (otras causas), la base correcta o "anularla entera", y el motivo. Se emite una **rectificativa por diferencias**.
+- **Serie propia** PRUEBA-R-AAAA (R-AAAA en producción), como exige el art. 15.5 del Reglamento de facturación, con la misma regla de orden de fechas.
+- **Efecto fiscal:** un ingreso nuevo por la diferencia (negativo si rebaja), con el IVA y la retención de la factura original y fecha de hoy: corrige el 303 y el IRPF del trimestre en que se emite (no se reabre el trimestre original). Va enlazado a la rectificativa, así que no se puede editar ni borrar suelto.
+- **VERI*FACTU:** registro de alta tipo R1/R4 con TipoRectificativa "I" y la referencia a la factura rectificada, encadenado con los demás. Igual que todo lo demás, **no se envía**: ENVIO_HABILITADO sigue en false y el botón de envío sigue desactivado.
+- **PDF:** título "Factura rectificativa", número y fecha de la factura que corrige y el motivo.
+- Solo se rectifica la factura original (no una rectificativa) y no se puede anular una factura que ya tiene rectificativas. El libro de ingresos pone R1/R4 en "Tipo de factura".
+- Descartados: rectificativas por sustitución (S), que reemplazan la factura entera y complican el encadenado; con diferencias se cubren todos los casos, incluida la anulación total.

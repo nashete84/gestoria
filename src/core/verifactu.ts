@@ -39,7 +39,10 @@ export interface DatosAlta {
   nombreEmisor: string
   numSerie: string
   fechaExpedicion: string // AAAA-MM-DD
-  tipoFactura: 'F1'
+  /** F1 factura; R1 rectificativa por error fundado en derecho o art. 80 Uno, Dos y Seis LIVA; R4 rectificativa por otras causas. */
+  tipoFactura: 'F1' | 'R1' | 'R4'
+  /** Solo en rectificativas (siempre "por diferencias"): la factura que se corrige. */
+  rectificada?: { idEmisor: string; numSerie: string; fechaExpedicion: string }
   descripcion: string
   /** null: cliente extranjero sin identificador fiscal; se omite el bloque Destinatarios. */
   destinatario:
@@ -175,6 +178,13 @@ export function xmlRegistroAlta(d: DatosAlta, huella: string): string {
     `<sum1:FechaExpedicionFactura>${fechaVf(d.fechaExpedicion)}</sum1:FechaExpedicionFactura></sum1:IDFactura>` +
     `<sum1:NombreRazonEmisor>${e(d.nombreEmisor)}</sum1:NombreRazonEmisor>` +
     `<sum1:TipoFactura>${d.tipoFactura}</sum1:TipoFactura>` +
+    (d.rectificada
+      ? `<sum1:TipoRectificativa>I</sum1:TipoRectificativa><sum1:FacturasRectificadas><sum1:IDFacturaRectificada>` +
+        `<sum1:IDEmisorFactura>${e(d.rectificada.idEmisor)}</sum1:IDEmisorFactura>` +
+        `<sum1:NumSerieFactura>${e(d.rectificada.numSerie)}</sum1:NumSerieFactura>` +
+        `<sum1:FechaExpedicionFactura>${fechaVf(d.rectificada.fechaExpedicion)}</sum1:FechaExpedicionFactura>` +
+        `</sum1:IDFacturaRectificada></sum1:FacturasRectificadas>`
+      : '') +
     `<sum1:DescripcionOperacion>${e(d.descripcion.slice(0, 500))}</sum1:DescripcionOperacion>` +
     (dest ? `<sum1:Destinatarios><sum1:IDDestinatario>${dest}</sum1:IDDestinatario></sum1:Destinatarios>` : '') +
     `<sum1:Desglose><sum1:DetalleDesglose>${detalle}</sum1:DetalleDesglose></sum1:Desglose>` +

@@ -248,7 +248,8 @@ export function PaginaIngresos({ perfil, onCambioCobros }: { perfil: Perfil; onC
           ) : null}
           {editando.id !== null ? <Adjuntos entidad="ingreso" id={editando.id} /> : <p className="nota">Guarda el ingreso para poder adjuntar justificantes y emitir la factura.</p>}
           {editando.facturaId !== null ? (
-            <FacturaPanel facturaId={editando.facturaId} onAnulada={() => { setEditando(null); void cargar() }} />
+            <FacturaPanel facturaId={editando.facturaId} onAnulada={() => { setEditando(null); void cargar() }}
+              onRectificada={(n) => { setHecho(`Emitida la factura rectificativa ${n}: está en la lista como un ingreso negativo.`); void cargar() }} />
           ) : null}
           <div className="acciones">
             {editando.facturaId === null ? <button onClick={guardar}><Icono nombre="guardar" />Guardar</button> : <button onClick={guardarCobro}><Icono nombre="guardar" />Guardar cobro</button>}
@@ -286,11 +287,14 @@ export function PaginaIngresos({ perfil, onCambioCobros }: { perfil: Perfil; onC
               <td className="num">{euros(i.base)}</td>
               <td className="num">{euros(i.cuotaIva)}</td>
               <td className="num">{euros(i.cuotaRetencion)}</td>
-              <td><EtiquetaCobro ingreso={i} /></td>
+              <td>
+                {/* La etiqueta es también el botón: un clic marca cobrado hoy o lo vuelve a dejar pendiente. */}
+                <button type="button" className="sin-estilo" onClick={() => cambiarCobro(i, i.fechaCobro ? null : hoy())}
+                  title={i.fechaCobro ? 'Marcar como pendiente de cobro' : `Marcar como cobrado hoy (${euros(importeACobrar(i))})`}>
+                  <EtiquetaCobro ingreso={i} />
+                </button>
+              </td>
               <td className="derecha">
-                {i.fechaCobro
-                  ? <BotonIcono icono="deshacer" texto="Marcar como pendiente de cobro" onClick={() => cambiarCobro(i, null)} />
-                  : <BotonIcono icono="cobrado" texto={`Marcar como cobrado hoy (${euros(importeACobrar(i))})`} onClick={() => cambiarCobro(i, hoy())} />}
                 <BotonIcono icono={i.facturaId ? 'ver' : 'editar'} texto={i.facturaId ? 'Ver' : 'Editar'} onClick={() => {
                   const { id, cuotaIva: _a, cuotaRetencion: _b, facturaId, ...datos } = i
                   setEditando({ id, datos, facturaId }); setAvisos([])

@@ -181,3 +181,5 @@ p.ahorro strong { color: #2a9d55; }
 p.ahorro .icono { vertical-align: -2px; color: #2a9d55; }
 tr.resaltada td { background: var(--acento-suave); font-weight: 600; }
 tr.apagada td { color: var(--suave); }
+button.sin-estilo { background: none; border: none; padding: 0; cursor: pointer; }
+button.sin-estilo:hover .cobro { outline: 1px solid var(--borde); }

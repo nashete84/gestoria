@@ -7,7 +7,7 @@ import {
   xmlLegible, xmlRegistroAlta, xmlRegistroAnulacion, type DatosAlta, type DatosAnulacion, type Entorno,
   type RegistroAnteriorRef
 } from '../verifactu'
-import { ErrorValidacion, leerPerfil } from './repos'
+import { crearIngreso, ErrorValidacion, leerPerfil } from './repos'
 
 type Db = BetterSqlite3.Database
 type Fila = Record<string, unknown>
@@ -28,6 +28,11 @@ export interface Factura {
   cuotaRetencion: number
   operacion: 'nacional' | 'intracomunitaria' | 'no_sujeta'
   estado: 'emitida' | 'anulada'
+  /** F1 normal; R1/R4 rectificativa. */
+  tipo: 'F1' | 'R1' | 'R4'
+  /** En rectificativas: la factura que corrige, su número y el motivo. */
+  rectificada: { id: number; numSerie: string; fechaExpedicion: string } | null
+  motivo: string | null
 }
 
 export interface RegistroVerifactu {
@@ -47,6 +52,9 @@ export interface DetalleFactura {
   envioHabilitado: boolean
   /** Vista previa antes de emitir: sin QR ni registro. */
   borrador?: boolean
+  /** Rectificativas emitidas de esta factura y la base que queda tras ellas. */
+  rectificativas?: { id: number; numSerie: string; fechaExpedicion: string; base: number }[]
+  baseVigente?: number
 }
 
 function aFactura(f: Fila): Factura {
@@ -57,9 +65,14 @@ function aFactura(f: Fila): Factura {
     concepto: f.concepto as string, base: f.base as number, tipoIva: f.tipo_iva as number,
     cuotaIva: f.cuota_iva as number, retencionPct: f.retencion_pct as number,
     cuotaRetencion: f.cuota_retencion as number, operacion: f.operacion as Factura['operacion'],
-    estado: f.estado as Factura['estado']
+    estado: f.estado as Factura['estado'], tipo: (f.tipo as Factura['tipo']) ?? 'F1',
+    rectificada: f.rectificada_id ? { id: f.rectificada_id as number, numSerie: (f.r_num_serie as string) ?? '', fechaExpedicion: (f.r_fecha as string) ?? '' } : null,
+    motivo: (f.motivo as string | null) ?? null
   }
 }
+
+/** SELECT de facturas con el número y fecha de la factura que rectifican. */
+const SELECT_FACTURAS = `SELECT f.*, r.num_serie AS r_num_serie, r.fecha_expedicion AS r_fecha FROM facturas f LEFT JOIN facturas r ON r.id = f.rectificada_id`
 
 function aRegistro(f: Fila): RegistroVerifactu {
   return {
@@ -104,6 +117,22 @@ function serieDe(entorno: Entorno, anio: string) {
   return entorno === 'prueba' ? `PRUEBA-${anio}` : anio
 }
 
+/** Las rectificativas van en su propia serie (art. 15.5 del Reglamento de facturación). */
+function serieRectificativa(entorno: Entorno, anio: string) {
+  return entorno === 'prueba' ? `PRUEBA-R-${anio}` : `R-${anio}`
+}
+
+/** Siguiente número de una serie, comprobando que las fechas van en orden. */
+function siguienteNumero(db: Db, serie: string, fecha: string) {
+  const ultima = db.prepare('SELECT numero, fecha_expedicion FROM facturas WHERE serie = ? ORDER BY numero DESC LIMIT 1')
+    .get(serie) as { numero: number; fecha_expedicion: string } | undefined
+  if (ultima && fecha < ultima.fecha_expedicion) {
+    throw new ErrorValidacion([`La numeración debe seguir el orden de fechas: la última factura de la serie es del ${ultima.fecha_expedicion}.`])
+  }
+  const numero = (ultima?.numero ?? 0) + 1
+  return { numero, numSerie: `${serie}-${String(numero).padStart(4, '0')}` }
+}
+
 /**
  * Emite la factura de un ingreso: le asigna número, guarda una copia fija de los datos
  * y genera su registro de alta encadenado. A partir de aquí el ingreso no se puede editar.
@@ -131,13 +160,7 @@ function prepararFactura(db: Db, ingresoId: number, hoy: string) {
   if (fecha > hoy) throw new ErrorValidacion(['No se puede emitir una factura con fecha futura.'])
   const entorno = ENTORNO_ACTIVO
   const serie = serieDe(entorno, fecha.slice(0, 4))
-  const ultima = db.prepare('SELECT numero, fecha_expedicion FROM facturas WHERE serie = ? ORDER BY numero DESC LIMIT 1')
-    .get(serie) as { numero: number; fecha_expedicion: string } | undefined
-  if (ultima && fecha < ultima.fecha_expedicion) {
-    throw new ErrorValidacion([`La numeración debe seguir el orden de fechas: la última factura de la serie es del ${ultima.fecha_expedicion}.`])
-  }
-  const numero = (ultima?.numero ?? 0) + 1
-  const numSerie = `${serie}-${String(numero).padStart(4, '0')}`
+  const { numero, numSerie } = siguienteNumero(db, serie, fecha)
 
   return { perfil, ing, cliente, fecha, entorno, serie, numero, numSerie }
 }
@@ -200,6 +223,10 @@ export function anularFactura(db: Db, facturaId: number, ahora = new Date()): Fa
   const f = leerFactura(db, facturaId)
   if (!f) throw new ErrorValidacion(['La factura no existe.'])
   if (f.estado === 'anulada') throw new ErrorValidacion(['La factura ya está anulada.'])
+  const rectificativas = db.prepare("SELECT num_serie FROM facturas WHERE rectificada_id = ? AND estado = 'emitida'").all(f.id) as { num_serie: string }[]
+  if (rectificativas.length) {
+    throw new ErrorValidacion([`No se puede anular: tiene la rectificativa ${rectificativas.map((r) => r.num_serie).join(', ')}. Si hace falta, emite otra rectificativa.`])
+  }
   const perfil = leerPerfil(db)!
   return db.transaction(() => {
     const datos: DatosAnulacion = {
@@ -219,12 +246,12 @@ export function anularFactura(db: Db, facturaId: number, ahora = new Date()): Fa
 }
 
 export function leerFactura(db: Db, id: number): Factura | null {
-  const f = db.prepare('SELECT * FROM facturas WHERE id = ?').get(id) as Fila | undefined
+  const f = db.prepare(`${SELECT_FACTURAS} WHERE f.id = ?`).get(id) as Fila | undefined
   return f ? aFactura(f) : null
 }
 
 export function listarFacturas(db: Db, desde: string, hasta: string): Factura[] {
-  return (db.prepare('SELECT * FROM facturas WHERE fecha_expedicion BETWEEN ? AND ? ORDER BY fecha_expedicion DESC, numero DESC')
+  return (db.prepare(`${SELECT_FACTURAS} WHERE f.fecha_expedicion BETWEEN ? AND ? ORDER BY f.fecha_expedicion DESC, f.numero DESC`)
     .all(desde, hasta) as Fila[]).map(aFactura)
 }
 
@@ -236,7 +263,10 @@ export function detalleFactura(db: Db, id: number): DetalleFactura | null {
     factura,
     registros,
     urlQr: urlQr(factura.entorno, factura.emisor.nif, factura.numSerie, factura.fechaExpedicion, importeTotalVf(factura)),
-    envioHabilitado: ENVIO_HABILITADO
+    envioHabilitado: ENVIO_HABILITADO,
+    rectificativas: (db.prepare("SELECT id, num_serie, fecha_expedicion, base FROM facturas WHERE rectificada_id = ? AND estado = 'emitida' ORDER BY id").all(id) as Fila[])
+      .map((r) => ({ id: r.id as number, numSerie: r.num_serie as string, fechaExpedicion: r.fecha_expedicion as string, base: r.base as number })),
+    baseVigente: baseVigente(db, id)
   }
 }
 
@@ -270,7 +300,82 @@ export function borradorFactura(db: Db, ingresoId: number, hoy: string): Detalle
     id: 0, entorno, numSerie, fechaExpedicion: fecha, ingresoId, emisor: perfil, cliente,
     concepto: ing.concepto as string, base: ing.base as number, tipoIva: ing.tipo_iva as number,
     cuotaIva: ing.cuota_iva as number, retencionPct: ing.retencion_pct as number,
-    cuotaRetencion: ing.cuota_retencion as number, operacion: ing.operacion as Factura['operacion'], estado: 'emitida'
+    cuotaRetencion: ing.cuota_retencion as number, operacion: ing.operacion as Factura['operacion'], estado: 'emitida',
+    tipo: 'F1', rectificada: null, motivo: null
   }
   return { factura, registros: [], urlQr: '', envioHabilitado: ENVIO_HABILITADO, borrador: true }
+}
+
+export interface DatosRectificacion {
+  /** Base que debería tener la factura después de corregirla (0 = se anula entera, p. ej. una devolución). */
+  nuevaBase: number
+  motivo: string
+  /** R1: error o causas del art. 80 LIVA (descuentos, devoluciones, impagos); R4: el resto. */
+  tipo: 'R1' | 'R4'
+}
+
+/** Base que tiene ahora una factura: la suya más la de sus rectificativas emitidas. */
+export function baseVigente(db: Db, facturaId: number): number {
+  const f = db.prepare('SELECT base FROM facturas WHERE id = ?').get(facturaId) as { base: number } | undefined
+  if (!f) throw new ErrorValidacion(['La factura no existe.'])
+  const r = db.prepare("SELECT COALESCE(SUM(base), 0) AS s FROM facturas WHERE rectificada_id = ? AND estado = 'emitida'").get(facturaId) as { s: number }
+  return f.base + r.s
+}
+
+/**
+ * Emite una factura rectificativa "por diferencias": una factura nueva, en su propia serie, por la diferencia entre la base
+ * nueva y la vigente (negativa si rebaja), con su ingreso (que corrige el 303 y la renta del trimestre en que se emite)
+ * y su registro de alta VERI*FACTU tipo R1/R4 que referencia la original. Como todo lo demás, no se envía a la AEAT.
+ */
+export function rectificarFactura(db: Db, facturaId: number, datos: DatosRectificacion, hoy: string, ahora = new Date()): Factura {
+  const f = leerFactura(db, facturaId)
+  if (!f) throw new ErrorValidacion(['La factura no existe.'])
+  if (f.estado !== 'emitida') throw new ErrorValidacion(['No se puede rectificar una factura anulada.'])
+  if (f.tipo !== 'F1') throw new ErrorValidacion(['Rectifica la factura original, no la rectificativa.'])
+  const errores: string[] = []
+  const motivo = (datos?.motivo ?? '').trim()
+  if (!motivo) errores.push('Indica el motivo de la rectificación (sale en la factura).')
+  if (motivo.length > 300) errores.push('El motivo es demasiado largo.')
+  if (datos?.tipo !== 'R1' && datos?.tipo !== 'R4') errores.push('Tipo de rectificativa no válido.')
+  if (!Number.isInteger(datos?.nuevaBase) || datos.nuevaBase < 0) errores.push('La base nueva no es un importe válido.')
+  if (errores.length) throw new ErrorValidacion(errores)
+  const vigente = baseVigente(db, f.id)
+  const diferencia = datos.nuevaBase - vigente
+  if (diferencia === 0) throw new ErrorValidacion(['La base nueva es igual a la actual: no hay nada que rectificar.'])
+  if (hoy < f.fechaExpedicion) throw new ErrorValidacion(['La rectificativa no puede ser anterior a la factura original.'])
+  const perfil = leerPerfil(db)
+  if (!perfil) throw new ErrorValidacion(['Rellena tu perfil antes de emitir facturas.'])
+
+  const original = f.ingresoId ? db.prepare('SELECT actividad_id FROM ingresos WHERE id = ?').get(f.ingresoId) as { actividad_id: string | null } | undefined : undefined
+  const concepto = `Rectificación de la factura ${f.numSerie}: ${motivo}`
+  const serie = serieRectificativa(f.entorno, hoy.slice(0, 4))
+
+  return db.transaction(() => {
+    const { numero, numSerie } = siguienteNumero(db, serie, hoy)
+    // El cliente de la factura original, aunque después se haya editado o borrado.
+    const clienteExiste = f.cliente.id && db.prepare('SELECT 1 FROM clientes WHERE id = ?').get(f.cliente.id)
+    const ing = crearIngreso(db, {
+      fecha: hoy, clienteId: clienteExiste ? f.cliente.id : null, actividadId: original?.actividad_id ?? null, concepto,
+      base: diferencia, tipoIva: f.tipoIva, retencionPct: f.retencionPct, operacion: f.operacion, notas: '',
+      fechaVencimiento: null, fechaCobro: null
+    })
+    const alta: DatosAlta = {
+      idEmisor: perfil.nif, nombreEmisor: perfil.nombre, numSerie, fechaExpedicion: hoy, tipoFactura: datos.tipo,
+      rectificada: { idEmisor: f.emisor.nif, numSerie: f.numSerie, fechaExpedicion: f.fechaExpedicion },
+      descripcion: concepto, destinatario: destinatario(f.cliente),
+      desglose: { calificacion: f.operacion === 'nacional' ? 'S1' : 'N2', tipoImpositivo: f.tipoIva, base: ing.base, cuota: ing.cuotaIva },
+      cuotaTotal: ing.cuotaIva, importeTotal: ing.base + ing.cuotaIva,
+      anterior: ultimoRegistro(db, f.entorno), fechaHoraHuso: fechaHoraHuso(ahora), sistema: sistema(perfil)
+    }
+    const r = db.prepare(`INSERT INTO facturas (entorno, serie, numero, num_serie, fecha_expedicion, ingreso_id, tipo, emisor, cliente,
+      concepto, base, tipo_iva, cuota_iva, retencion_pct, cuota_retencion, operacion, rectificada_id, motivo)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(
+      f.entorno, serie, numero, numSerie, hoy, ing.id, datos.tipo, JSON.stringify(perfil), JSON.stringify(f.cliente),
+      concepto, ing.base, f.tipoIva, ing.cuotaIva, f.retencionPct, ing.cuotaRetencion, f.operacion, f.id, motivo)
+    const id = Number(r.lastInsertRowid)
+    const huella = huellaAlta(alta)
+    insertarRegistro(db, f.entorno, 'alta', id, alta.idEmisor, numSerie, hoy, alta.fechaHoraHuso, huella, alta.anterior?.huella ?? null, xmlRegistroAlta(alta, huella))
+    db.prepare('UPDATE ingresos SET factura_id = ? WHERE id = ?').run(id, ing.id)
+    return leerFactura(db, id)!
+  })()
 }

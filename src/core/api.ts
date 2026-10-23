@@ -1,6 +1,6 @@
 // Contrato entre la interfaz (renderer) y el proceso principal.
 import type { ObligacionConEstado, Presentacion, PresentacionNueva } from './calendario'
-import type { DetalleFactura, Factura } from './db/facturas'
+import type { DatosRectificacion, DetalleFactura, Factura } from './db/facturas'
 import type { Resumen } from './db/repos'
 import type { VistaRenta } from './db/renta'
 import type { AjustesModelos, ResultadoModelo } from './modelos/tipos'
@@ -81,6 +81,8 @@ export interface ApiGestoria {
   guardarPdfFactura(facturaId: number): Promise<Resultado<string | null>>
   /** XML de la petición que se enviaría a la AEAT. */
   xmlVerifactu(facturaId: number): Promise<Resultado<string>>
+  /** Emite una rectificativa por diferencias (serie R). Como las demás, no se envía a VERI*FACTU. */
+  rectificarFactura(facturaId: number, datos: DatosRectificacion): Promise<Resultado<Factura>>
   anularFactura(facturaId: number): Promise<Resultado<Factura>>
   enviarVerifactu(facturaId: number): Promise<Resultado<void>>
   /** Estimación de la declaración de la renta del ejercicio con los datos guardados. */
@@ -139,7 +141,7 @@ export const METODOS_API = [
   'listarRecurrentes', 'crearRecurrente', 'actualizarRecurrente', 'borrarRecurrente', 'generarRecurrentes',
   'listarAdjuntos', 'adjuntar', 'elegirArchivos', 'adjuntarElegidos', 'abrirAdjunto', 'borrarAdjunto',
   'resumen', 'calendarioFiscal', 'registrarPresentacion', 'borrarPresentacion',
-  'listarFacturas', 'vistaPreviaFactura', 'guardarPdfBorrador', 'emitirFactura', 'detalleFactura', 'guardarPdfFactura', 'xmlVerifactu', 'anularFactura', 'enviarVerifactu',
+  'listarFacturas', 'vistaPreviaFactura', 'guardarPdfBorrador', 'emitirFactura', 'detalleFactura', 'guardarPdfFactura', 'xmlVerifactu', 'anularFactura', 'rectificarFactura', 'enviarVerifactu',
   'estimacionRenta', 'guardarDatosRenta',
   'calcularModelo', 'guardarFicheroModelo', 'exportarLibros', 'leerAjustesModelos', 'guardarAjustesModelos',
   'abrirCarpetaDatos', 'informeIngresosGastos', 'informeImpuestos', 'informePrevision', 'simularIrpf', 'ingresosConRetencion',

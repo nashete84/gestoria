@@ -183,6 +183,11 @@ const MIGRACIONES: string[] = [
     gasto_id INTEGER,
     importado TEXT NOT NULL DEFAULT (datetime('now'))
   );
+  `,
+  // Facturas rectificativas: a qué factura corrigen y por qué.
+  `
+  ALTER TABLE facturas ADD COLUMN rectificada_id INTEGER REFERENCES facturas(id);
+  ALTER TABLE facturas ADD COLUMN motivo TEXT;
   `
 ]
 

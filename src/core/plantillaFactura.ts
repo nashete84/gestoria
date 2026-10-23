@@ -66,8 +66,9 @@ export function htmlFactura(d: DetalleFactura, qrDataUrl: string): string {
       <div><b>VERI*FACTU</b></div>
     </div>
     <div>
-      <h1>Factura</h1>
+      <h1>${f.rectificada ? 'Factura rectificativa' : 'Factura'}</h1>
       <div class="meta">Nº <b>${e(f.numSerie)}</b>${d.borrador ? ' (provisional)' : ''}<br>Fecha de expedición: ${fecha(f.fechaExpedicion)}</div>
+      ${f.rectificada ? `<div class="meta">Rectifica la factura <b>${e(f.rectificada.numSerie)}</b> del ${fecha(f.rectificada.fechaExpedicion)}, por diferencias.<br>Motivo: ${e(f.motivo ?? '')}</div>` : ''}
       ${f.estado === 'anulada' ? '<div class="meta anulada">ANULADA</div>' : ''}
       ${prueba ? '<div class="aviso">Factura de prueba sin validez fiscal.</div>' : ''}
       ${!prueba && !enviada && !d.borrador ? '<div class="aviso">Registro pendiente de envío a la AEAT.</div>' : ''}

@@ -45,8 +45,8 @@ export interface DatosLibros {
   ingresos: Ingreso[]
   gastos: Gasto[]
   clientes: Cliente[]
-  /** Número de factura emitida por id de ingreso. */
-  facturas: Map<number, string>
+  /** Número y tipo (F1, R1, R4) de la factura emitida, por id de ingreso. */
+  facturas: Map<number, { numSerie: string; tipo: string }>
 }
 
 const euros = (c: number) => ({ importe: c / 100 })
@@ -62,8 +62,8 @@ export function filasIngresos(d: DatosLibros): Celda[][] {
     // Tipo de identificación: vacío = NIF español; 02 = NIF-IVA de la UE; 04 = documento del país de residencia.
     const tipoId = !cliente?.nif ? '' : ambito === 'nacional' ? '' : ambito === 'ue' ? '02' : '04'
     return [
-      Number(i.fecha.slice(0, 4)), trimestre(i.fecha), 'A', TIPO_ACTIVIDAD[act.seccion], act.codigo, 'F1', 'I01', euros(i.base),
-      { fecha: i.fecha }, { fecha: i.fecha }, d.facturas.get(i.id) ?? '', tipoId, cliente?.nif ?? '', cliente?.nombre ?? '',
+      Number(i.fecha.slice(0, 4)), trimestre(i.fecha), 'A', TIPO_ACTIVIDAD[act.seccion], act.codigo, d.facturas.get(i.id)?.tipo ?? 'F1', 'I01', euros(i.base),
+      { fecha: i.fecha }, { fecha: i.fecha }, d.facturas.get(i.id)?.numSerie ?? '', tipoId, cliente?.nif ?? '', cliente?.nombre ?? '',
       '01', i.operacion === 'nacional' ? 'S1' : 'N2', '', euros(i.base + i.cuotaIva - i.cuotaRetencion), euros(i.base), i.tipoIva,
       euros(i.cuotaIva), 0, euros(0), i.retencionPct, euros(i.cuotaRetencion)
     ]
