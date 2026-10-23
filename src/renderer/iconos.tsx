@@ -31,6 +31,7 @@ const TRAZOS = {
   enviar: 'M22 2L11 13M22 2l-7 20-4-9-9-4z',
   deshacer: 'M3 7v6h6M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13',
   chat: 'M7.9 20A9 9 0 1 0 4 16.1L2 22z',
+  cobrado: 'M22 11.08V12a10 10 0 1 1-5.93-9.14M22 4L12 14.01l-3-3',
   marca: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M9 15l2 2 4-4'
 } as const
 

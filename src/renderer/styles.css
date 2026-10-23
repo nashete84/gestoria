@@ -76,7 +76,8 @@ tfoot td { border-top: 1px solid var(--borde); }
 th { font-size: 11px; color: var(--suave); font-weight: 600; text-transform: uppercase; letter-spacing: .04em; background: var(--fondo); }
 tbody tr { transition: background-color .1s; }
 tbody tr:hover { background: var(--hover); }
-td.derecha { padding-top: 4px; padding-bottom: 4px; }
+td.derecha { padding: 4px 8px 4px 4px; }
+td .icono-btn { width: 28px; height: 28px; }
 tfoot td { font-weight: 600; border-bottom: 0; }
 .num { text-align: right; font-variant-numeric: tabular-nums; }
 .derecha { text-align: right; white-space: nowrap; }
@@ -167,3 +168,8 @@ table.desglose tr.info td { color: var(--suave); font-size: 12px; }
 .reparto-nombre { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .reparto-barra { height: 10px; }
 .reparto-barra span { display: block; height: 100%; border-radius: 0 4px 4px 0; min-width: 2px; }
+
+.cobro { font-size: 12px; padding: 1px 8px; border-radius: 99px; white-space: nowrap; }
+.cobro.cobrado { color: var(--suave); }
+.cobro.pendiente { background: var(--aviso); color: #b07d00; }
+.cobro.vencido { background: var(--error); color: var(--peligro); font-weight: 600; }

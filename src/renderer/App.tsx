@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { Perfil } from '../core/tipos'
 import { api, llamar, mensajes } from './api'
+import { resumirCobros } from '../core/cobros'
 import { Errores, hoy } from './componentes'
 import { Icono, type NombreIcono } from './iconos'
 import { ChatAsistente } from './pages/Asistente'
@@ -31,12 +32,15 @@ export function App() {
   const [pagina, setPagina] = useState<Pagina>('resumen')
   const [errores, setErrores] = useState<string[]>([])
   const [pendientes, setPendientes] = useState(0)
+  const [cobrosVencidos, setCobrosVencidos] = useState(0)
 
   const contarPendientes = () =>
     llamar(api.calendarioFiscal(hoy()))
       .then((l) => setPendientes(l.filter((o) => o.ejercicio === Number(hoy().slice(0, 4)) && !o.condicional && (o.estado === 'vencido' || o.estado === 'en_plazo')).length))
       .catch(() => setPendientes(0))
-  useEffect(() => { if (perfil) void contarPendientes() }, [perfil, pagina])
+  const contarCobros = () =>
+    llamar(api.pendientesDeCobro()).then((l) => setCobrosVencidos(resumirCobros(l, hoy()).vencidos)).catch(() => setCobrosVencidos(0))
+  useEffect(() => { if (perfil) { void contarPendientes(); void contarCobros() } }, [perfil, pagina])
 
   useEffect(() => {
     llamar(api.leerPerfil())
@@ -56,6 +60,7 @@ export function App() {
             <Icono nombre={m.icono} />
             <span className="nombre">{m.nombre}</span>
             {m.id === 'impuestos' && pendientes > 0 ? <span className="insignia" title={`${pendientes} modelo(s) pendientes`}>{pendientes}</span> : null}
+            {m.id === 'ingresos' && cobrosVencidos > 0 ? <span className="insignia" title={`${cobrosVencidos} cobro(s) vencido(s)`}>{cobrosVencidos}</span> : null}
           </button>
         ))}
         {perfil ? (
@@ -72,7 +77,7 @@ export function App() {
         {perfil && pagina === 'informes' ? <PaginaInformes /> : null}
         {perfil && pagina === 'impuestos' ? <PaginaImpuestos onCambio={contarPendientes} /> : null}
         {perfil && pagina === 'renta' ? <PaginaRenta /> : null}
-        {perfil && pagina === 'ingresos' ? <PaginaIngresos perfil={perfil} /> : null}
+        {perfil && pagina === 'ingresos' ? <PaginaIngresos perfil={perfil} onCambioCobros={contarCobros} /> : null}
         {perfil && pagina === 'gastos' ? <PaginaGastos perfil={perfil} /> : null}
         {perfil && pagina === 'clientes' ? <PaginaClientes /> : null}
       </main>

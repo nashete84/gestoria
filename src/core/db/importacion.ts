@@ -106,6 +106,7 @@ export function aplicarImportacion(
       try {
         const nuevo = crearIngreso(db, {
           ...i.datos, clienteId, actividadId: actividad(i.iae), operacion,
+          fechaCobro: i.datos.fecha, // el histórico se da por cobrado
           tipoIva: operacion === 'nacional' ? i.datos.tipoIva : 0,
           retencionPct: operacion === 'nacional' ? i.datos.retencionPct : 0
         })

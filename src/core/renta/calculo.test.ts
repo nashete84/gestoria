@@ -11,7 +11,7 @@ const p2025 = parametrosDe(2025)
 let n = 0
 const ingreso = (fecha: string, base: number, extra: Partial<Ingreso> = {}): Ingreso => ({
   id: ++n, fecha, clienteId: null, actividadId: null, concepto: 'Servicios', base: e(base), tipoIva: 0, cuotaIva: 0,
-  retencionPct: 0, cuotaRetencion: 0, operacion: 'no_sujeta', facturaId: null, notas: '', ...extra
+  retencionPct: 0, cuotaRetencion: 0, operacion: 'no_sujeta', facturaId: null, notas: '', fechaVencimiento: null, fechaCobro: null, ...extra
 })
 const gasto = (fecha: string, base: number, extra: Partial<Gasto> = {}): Gasto => ({
   id: ++n, fecha, proveedor: 'Proveedor', nifProveedor: '', paisProveedor: 'ES', numeroFactura: '', actividadId: null,

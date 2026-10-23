@@ -11,7 +11,7 @@ export { periodoTrimestre } from '../periodos'
 import type {
   Adjunto, Cliente, ClienteNuevo, Gasto, GastoNuevo, Ingreso, IngresoNuevo, Perfil
 } from '../tipos'
-import { validarCliente, validarGasto, validarIngreso, validarPerfil } from '../validacion'
+import { validarCliente, validarCobro, validarGasto, validarIngreso, validarPerfil } from '../validacion'
 
 type Db = BetterSqlite3.Database
 type Fila = Record<string, unknown>
@@ -110,7 +110,8 @@ function aIngreso(f: Fila): Ingreso {
     actividadId: (f.actividad_id as string | null) ?? null, concepto: f.concepto as string, base: f.base as number, tipoIva: f.tipo_iva as number,
     cuotaIva: f.cuota_iva as number, retencionPct: f.retencion_pct as number,
     cuotaRetencion: f.cuota_retencion as number, operacion: f.operacion as Ingreso['operacion'],
-    facturaId: (f.factura_id as number | null) ?? null, notas: f.notas as string
+    facturaId: (f.factura_id as number | null) ?? null, notas: f.notas as string,
+    fechaVencimiento: (f.fecha_vencimiento as string | null) ?? null, fechaCobro: (f.fecha_cobro as string | null) ?? null
   }
 }
 
@@ -126,7 +127,7 @@ function comprobarActividad(db: Db, actividadId: string | null) {
 }
 
 function filaIngreso(db: Db, entrada: IngresoNuevo) {
-  const n = { ...entrada, actividadId: entrada.actividadId ?? null }
+  const n = { ...entrada, actividadId: entrada.actividadId ?? null, fechaVencimiento: entrada.fechaVencimiento ?? null, fechaCobro: entrada.fechaCobro ?? null }
   comprobar(validarIngreso(n))
   comprobarActividad(db, n.actividadId)
   return { ...n, ...calcularIngreso(n) }
@@ -135,8 +136,8 @@ function filaIngreso(db: Db, entrada: IngresoNuevo) {
 export function crearIngreso(db: Db, n: IngresoNuevo): Ingreso {
   const f = filaIngreso(db, n)
   const r = db.prepare(`INSERT INTO ingresos
-    (fecha, cliente_id, actividad_id, concepto, base, tipo_iva, cuota_iva, retencion_pct, cuota_retencion, operacion, notas)
-    VALUES (@fecha, @clienteId, @actividadId, @concepto, @base, @tipoIva, @cuotaIva, @retencionPct, @cuotaRetencion, @operacion, @notas)`
+    (fecha, cliente_id, actividad_id, concepto, base, tipo_iva, cuota_iva, retencion_pct, cuota_retencion, operacion, notas, fecha_vencimiento, fecha_cobro)
+    VALUES (@fecha, @clienteId, @actividadId, @concepto, @base, @tipoIva, @cuotaIva, @retencionPct, @cuotaRetencion, @operacion, @notas, @fechaVencimiento, @fechaCobro)`
   ).run(f)
   return { ...f, id: Number(r.lastInsertRowid), facturaId: null }
 }
@@ -148,8 +149,26 @@ export function actualizarIngreso(db: Db, id: number, n: IngresoNuevo): Ingreso 
   const f = filaIngreso(db, n)
   db.prepare(`UPDATE ingresos SET fecha=@fecha, cliente_id=@clienteId, actividad_id=@actividadId, concepto=@concepto, base=@base,
     tipo_iva=@tipoIva, cuota_iva=@cuotaIva, retencion_pct=@retencionPct, cuota_retencion=@cuotaRetencion,
-    operacion=@operacion, notas=@notas WHERE id=@id`).run({ ...f, id })
+    operacion=@operacion, notas=@notas, fecha_vencimiento=@fechaVencimiento, fecha_cobro=@fechaCobro WHERE id=@id`).run({ ...f, id })
   return { ...f, id, facturaId: null }
+}
+
+/**
+ * Cambia solo el vencimiento y el cobro. No toca nada fiscal, así que vale también para los ingresos que
+ * vienen de una factura emitida (esos no se pueden editar de otra forma).
+ */
+export function actualizarCobro(db: Db, id: number, c: { fechaVencimiento: string | null; fechaCobro: string | null }): Ingreso {
+  const fila = db.prepare('SELECT * FROM ingresos WHERE id = ?').get(id) as Fila | undefined
+  if (!fila) throw new ErrorValidacion(['El ingreso no existe.'])
+  const datos = { fechaVencimiento: c.fechaVencimiento || null, fechaCobro: c.fechaCobro || null }
+  comprobar(validarCobro(fila.fecha as string, datos))
+  db.prepare('UPDATE ingresos SET fecha_vencimiento = ?, fecha_cobro = ? WHERE id = ?').run(datos.fechaVencimiento, datos.fechaCobro, id)
+  return { ...aIngreso(fila), ...datos }
+}
+
+/** Ingresos sin cobrar, de cualquier fecha (los más antiguos primero). */
+export function ingresosPendientesDeCobro(db: Db): Ingreso[] {
+  return (db.prepare('SELECT * FROM ingresos WHERE fecha_cobro IS NULL ORDER BY COALESCE(fecha_vencimiento, fecha), id').all() as Fila[]).map(aIngreso)
 }
 
 export function borrarIngreso(db: Db, id: number): void {

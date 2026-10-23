@@ -31,6 +31,10 @@ export interface ApiGestoria {
   crearIngreso(i: IngresoNuevo): Promise<Resultado<Ingreso>>
   actualizarIngreso(id: number, i: IngresoNuevo): Promise<Resultado<Ingreso>>
   borrarIngreso(id: number): Promise<Resultado<void>>
+  /** Cambia vencimiento y cobro, también en ingresos con factura (no toca datos fiscales). */
+  actualizarCobro(id: number, c: { fechaVencimiento: string | null; fechaCobro: string | null }): Promise<Resultado<Ingreso>>
+  /** Todos los ingresos sin cobrar, de cualquier año. */
+  pendientesDeCobro(): Promise<Resultado<Ingreso[]>>
 
   listarGastos(desde: string, hasta: string): Promise<Resultado<Gasto[]>>
   crearGasto(g: GastoNuevo): Promise<Resultado<Gasto>>
@@ -113,7 +117,7 @@ export const CANAL_ASISTENTE = 'gestoria-evento:asistente'
 export const METODOS_API = [
   'leerPerfil', 'guardarPerfil',
   'listarClientes', 'crearCliente', 'actualizarCliente', 'borrarCliente',
-  'listarIngresos', 'crearIngreso', 'actualizarIngreso', 'borrarIngreso',
+  'listarIngresos', 'crearIngreso', 'actualizarIngreso', 'borrarIngreso', 'actualizarCobro', 'pendientesDeCobro',
   'listarGastos', 'crearGasto', 'actualizarGasto', 'borrarGasto',
   'listarAdjuntos', 'adjuntar', 'elegirArchivos', 'adjuntarElegidos', 'abrirAdjunto', 'borrarAdjunto',
   'resumen', 'calendarioFiscal', 'registrarPresentacion', 'borrarPresentacion',

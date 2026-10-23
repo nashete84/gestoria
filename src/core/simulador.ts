@@ -34,7 +34,7 @@ function renta(ejercicio: number, perfil: Perfil, datos: DatosRenta, e: EntradaS
   const fecha = `${ejercicio}-06-30`
   const ingreso: Ingreso = {
     id: -1, fecha, clienteId: null, actividadId: null, concepto: 'Simulación', base: e.ingresos, tipoIva: 0, cuotaIva: 0,
-    retencionPct: 0, cuotaRetencion: e.retenciones, operacion: 'nacional', facturaId: null, notas: ''
+    retencionPct: 0, cuotaRetencion: e.retenciones, operacion: 'nacional', facturaId: null, notas: '', fechaVencimiento: null, fechaCobro: null
   }
   const gasto: Gasto = {
     id: -2, fecha, proveedor: 'Simulación', nifProveedor: '', paisProveedor: 'ES', numeroFactura: '', actividadId: null,

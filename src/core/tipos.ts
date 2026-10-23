@@ -97,9 +97,18 @@ export interface Ingreso {
   /** Se rellenará en el paso 2 cuando el ingreso venga de una factura emitida. */
   facturaId: number | null
   notas: string
+  /** Fecha límite de cobro (AAAA-MM-DD); null = sin vencimiento. */
+  fechaVencimiento: string | null
+  /** Día en que se cobró; null = pendiente de cobro. */
+  fechaCobro: string | null
 }
 
-export type IngresoNuevo = Omit<Ingreso, 'id' | 'cuotaIva' | 'cuotaRetencion' | 'facturaId'>
+/** Al crear un ingreso, el cobro es opcional: sin él queda pendiente y sin vencimiento. */
+export type IngresoNuevo = Omit<Ingreso, 'id' | 'cuotaIva' | 'cuotaRetencion' | 'facturaId' | 'fechaVencimiento' | 'fechaCobro'> &
+  Partial<Pick<Ingreso, 'fechaVencimiento' | 'fechaCobro'>>
+
+/** Estado de cobro de un ingreso en una fecha. */
+export type EstadoCobro = 'cobrado' | 'pendiente' | 'vencido'
 
 /**
  * Tipo de operación de un gasto.

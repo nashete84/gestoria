@@ -13,6 +13,7 @@ import { analizarDeclarando, type PlanImportacion } from '../core/importacion/de
 import { guardarAdjuntoImportado, leerOrigenes, textoPdf } from './importar'
 import * as repos from '../core/db/repos'
 import { htmlFactura } from '../core/plantillaFactura'
+import { resumirCobros } from '../core/cobros'
 import { ENVIO_HABILITADO } from '../core/verifactu'
 import { migrar } from '../core/db/schema'
 import { copiarAdjunto, eliminarArchivo } from './adjuntos'
@@ -78,6 +79,15 @@ function avisarImpuestos() {
   new Notification({ title: 'Impuestos pendientes', body: partes.join(' y ') + '.' }).show()
 }
 
+/** Al abrir la app, avisa de las facturas con el cobro vencido. */
+function avisarCobros() {
+  if (!Notification.isSupported()) return
+  const r = resumirCobros(repos.ingresosPendientesDeCobro(db), hoyLocal())
+  if (!r.vencidos) return
+  const importe = (r.importeVencido / 100).toLocaleString('es-ES', { style: 'currency', currency: 'EUR' })
+  new Notification({ title: 'Cobros vencidos', body: `${r.vencidos} ingreso(s) sin cobrar con el plazo pasado (${importe}).` }).show()
+}
+
 type Handlers = { [K in keyof ApiGestoria]: (...args: any[]) => unknown }
 
 const handlers: Handlers = {
@@ -92,6 +102,11 @@ const handlers: Handlers = {
   listarIngresos: (d, h) => repos.listarIngresos(db, fechaValida(d), fechaValida(h)),
   crearIngreso: (n) => repos.crearIngreso(db, n),
   actualizarIngreso: (i, n) => repos.actualizarIngreso(db, id(i), n),
+  actualizarCobro: (i, c) => {
+    const fecha = (v: unknown) => (v === null || v === '' ? null : fechaValida(v))
+    return repos.actualizarCobro(db, id(i), { fechaVencimiento: fecha(c?.fechaVencimiento), fechaCobro: fecha(c?.fechaCobro) })
+  },
+  pendientesDeCobro: () => repos.ingresosPendientesDeCobro(db),
   borrarIngreso: async (i) => {
     const adj = repos.listarAdjuntos(db, 'ingreso', id(i))
     repos.borrarIngreso(db, id(i))
@@ -349,6 +364,7 @@ app.whenReady().then(() => {
   crearVentana()
   try {
     avisarImpuestos()
+    avisarCobros()
   } catch (err) {
     console.error(err)
   }

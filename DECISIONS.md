@@ -204,3 +204,13 @@ Los gastos ya guardados no se recalculan. Descartado: una tabla completa por ep�
 **Resumen, Ingresos y Gastos se abren con el año entero (2026-10-22, a petición de Nacho)**, en vez del trimestre en curso. El trimestre se sigue pudiendo elegir en el selector.
 
 **Rediseño visual con iconos (2026-10-22, a petición de Nacho).** Iconos de línea con los trazos de Lucide (licencia ISC) dentro de la app como SVG, sin dependencia ni descarga: heredan el color y funcionan en modo claro y oscuro. Menú lateral con iconos, logo y avatar; tarjetas del Resumen con icono; botones principales con icono y texto; acciones de cada fila (editar, duplicar, borrar, PDF) como botones de icono con su nombre en la ayuda y para lectores de pantalla. Estilo: esquinas de 12 px, sombras suaves, cabeceras de tabla en versalitas, fila resaltada al pasar el ratón y anillo de foco visible. Descartados: la librería lucide-react (otra dependencia para unos 30 iconos) y emojis (se ven distintos en cada sistema).
+
+## Cobros de los ingresos (2026-10-23, a petición de Nacho)
+
+Cada ingreso tiene **vencimiento** y **fecha de cobro** (vacía = pendiente). Estado: cobrado, pendiente o vencido (el día del vencimiento aún cuenta como pendiente). Importe a cobrar = base + IVA − retención.
+- **Lo que ya había** (incluido el histórico de Declarando) se da por cobrado el mismo día del ingreso. Descartado: dejarlo pendiente (saldrían 29 avisos de cobros que ya se cobraron).
+- **Vencimiento por defecto:** fecha + 30 días, y se mueve con la fecha mientras no se cambie a mano. Se puede dejar vacío (sin vencimiento: nunca sale como vencido).
+- **Ingresos con factura emitida:** no se pueden editar, pero el cobro sí (`actualizarCobro` solo toca esas dos columnas, nada fiscal ni de VERI*FACTU).
+- **Dónde se ve:** columna "Cobro" con botón de marcar cobrado hoy / volver a pendiente; filtro "Por cobrar (todos los años)"; insignia con los vencidos en el menú Ingresos; aviso y tarjeta "Pendiente de cobro" en Resumen; notificación del sistema al abrir la app si hay cobros vencidos.
+- Duplicar un ingreso deja la copia pendiente, con vencimiento a 30 días.
+- Descartados: cobros parciales (no hacen falta con un único pago por factura; se puede añadir si aparece el caso) y criterio de caja del IVA (Nacho no está en ese régimen; el IVA se devenga al facturar, cobre o no).

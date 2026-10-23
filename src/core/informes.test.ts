@@ -94,7 +94,7 @@ describe('simulador de IRPF', () => {
 describe('previsión de ingresos', () => {
   const mk = (fecha: string, euros: number): Ingreso => ({
     id: 0, fecha, clienteId: null, actividadId: null, concepto: '', base: e(euros), tipoIva: 21, cuotaIva: 0,
-    retencionPct: 15, cuotaRetencion: e(euros * 0.15), operacion: 'nacional', facturaId: null, notas: ''
+    retencionPct: 15, cuotaRetencion: e(euros * 0.15), operacion: 'nacional', facturaId: null, notas: '', fechaVencimiento: null, fechaCobro: null
   })
 
   it('repite la media de los últimos 6 meses completos hasta diciembre', () => {

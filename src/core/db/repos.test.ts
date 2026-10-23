@@ -30,7 +30,7 @@ const gasto = (extra: Partial<GastoNuevo> = {}): GastoNuevo => ({
 
 it('las migraciones son idempotentes', () => {
   migrar(db)
-  expect(db.pragma('user_version', { simple: true })).toBe(6)
+  expect(db.pragma('user_version', { simple: true })).toBe(7)
 })
 
 it('guarda y lee el perfil normalizando el NIF', () => {

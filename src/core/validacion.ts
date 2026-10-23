@@ -66,6 +66,16 @@ export function validarIngreso(i: IngresoNuevo): string[] {
     e.push('Las operaciones intracomunitarias o no sujetas no llevan IVA.')
   }
   if (i.operacion !== 'nacional' && i.retencionPct !== 0) e.push('Las operaciones intracomunitarias o no sujetas no llevan retención.')
+  e.push(...validarCobro(i.fecha, i))
+  return e
+}
+
+/** Vencimiento y cobro: fechas válidas o vacías; el vencimiento no puede ser anterior al ingreso. */
+export function validarCobro(fecha: string, c: { fechaVencimiento?: string | null; fechaCobro?: string | null }): string[] {
+  const e: string[] = []
+  if (c.fechaVencimiento != null && !fechaValida(c.fechaVencimiento)) e.push('La fecha de vencimiento no es válida.')
+  else if (c.fechaVencimiento != null && c.fechaVencimiento < fecha) e.push('El vencimiento no puede ser anterior a la fecha del ingreso.')
+  if (c.fechaCobro != null && !fechaValida(c.fechaCobro)) e.push('La fecha de cobro no es válida.')
   return e
 }
 

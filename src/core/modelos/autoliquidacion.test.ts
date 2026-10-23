@@ -18,7 +18,7 @@ const ingreso = (fecha: string, base: number, extra: Partial<Ingreso> = {}): Ing
   return {
     id: ++n, fecha, clienteId: null, actividadId: null, concepto: 'Servicios', base: e(base), tipoIva,
     cuotaIva: Math.round(e(base) * tipoIva / 100), retencionPct, cuotaRetencion: Math.round(e(base) * retencionPct / 100),
-    operacion: 'nacional', facturaId: null, notas: '', ...extra
+    operacion: 'nacional', facturaId: null, notas: '', fechaVencimiento: null, fechaCobro: null, ...extra
   }
 }
 const gasto = (fecha: string, base: number, extra: Partial<Gasto> = {}): Gasto => {

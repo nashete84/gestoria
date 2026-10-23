@@ -150,6 +150,12 @@ const MIGRACIONES: string[] = [
     ejercicio INTEGER PRIMARY KEY,
     datos TEXT NOT NULL
   );
+  `,
+  // Cobros: vencimiento y fecha en que se cobró. Lo que ya había se da por cobrado el día del ingreso.
+  `
+  ALTER TABLE ingresos ADD COLUMN fecha_vencimiento TEXT;
+  ALTER TABLE ingresos ADD COLUMN fecha_cobro TEXT;
+  UPDATE ingresos SET fecha_cobro = fecha;
   `
 ]
 
