@@ -1,0 +1,150 @@
+// Contrato entre la interfaz (renderer) y el proceso principal.
+import type { ObligacionConEstado, Presentacion, PresentacionNueva } from './calendario'
+import type { DatosRectificacion, DetalleFactura, Factura } from './db/facturas'
+import type { Resumen } from './db/repos'
+import type { VistaRenta } from './db/renta'
+import type { AjustesModelos, ResultadoModelo } from './modelos/tipos'
+import type { EstadoAsistente, EventoAsistente, InfoModeloAsistente, RespuestaAsistente } from './asistente/servicio'
+import type { MensajeChat } from './asistente/prompt'
+import type { Modelo, Periodo } from './calendario'
+import type { DatosRenta } from './renta/calculo'
+import type { InformeImpuestos, InformeIngresosGastos } from './informes'
+import type { Prevision } from './prevision'
+import type { ResultadoImportacion, VistaImportacion } from './db/importacion'
+import type { EntradaSimulador, ResultadoSimulador } from './simulador'
+import type { Recurrente, RecurrenteNuevo } from './recurrentes'
+import type { ResultadoRecurrentes } from './db/recurrentes'
+import type { DecisionBanco, ResultadoBanco, VistaBanco } from './db/banco'
+import type {
+  Adjunto, Cliente, ClienteNuevo, Gasto, GastoNuevo, Ingreso, IngresoNuevo, Perfil
+} from './tipos'
+
+export type Resultado<T> = { ok: true; datos: T } | { ok: false; errores: string[] }
+
+export interface ApiGestoria {
+  leerPerfil(): Promise<Resultado<Perfil | null>>
+  guardarPerfil(p: Perfil): Promise<Resultado<Perfil>>
+
+  listarClientes(): Promise<Resultado<Cliente[]>>
+  crearCliente(c: ClienteNuevo): Promise<Resultado<Cliente>>
+  actualizarCliente(id: number, c: ClienteNuevo): Promise<Resultado<Cliente>>
+  borrarCliente(id: number): Promise<Resultado<void>>
+
+  listarIngresos(desde: string, hasta: string): Promise<Resultado<Ingreso[]>>
+  crearIngreso(i: IngresoNuevo): Promise<Resultado<Ingreso>>
+  actualizarIngreso(id: number, i: IngresoNuevo): Promise<Resultado<Ingreso>>
+  borrarIngreso(id: number): Promise<Resultado<void>>
+  /** Cambia vencimiento y cobro, también en ingresos con factura (no toca datos fiscales). */
+  actualizarCobro(id: number, c: { fechaVencimiento: string | null; fechaCobro: string | null }): Promise<Resultado<Ingreso>>
+  /** Todos los ingresos sin cobrar, de cualquier año. */
+  pendientesDeCobro(): Promise<Resultado<Ingreso[]>>
+
+  listarGastos(desde: string, hasta: string): Promise<Resultado<Gasto[]>>
+  crearGasto(g: GastoNuevo): Promise<Resultado<Gasto>>
+  actualizarGasto(id: number, g: GastoNuevo): Promise<Resultado<Gasto>>
+  borrarGasto(id: number): Promise<Resultado<void>>
+
+  listarRecurrentes(): Promise<Resultado<Recurrente[]>>
+  /** Crea el recurrente y, a continuación, los apuntes que ya tocan hasta hoy. */
+  crearRecurrente(r: RecurrenteNuevo): Promise<Resultado<ResultadoRecurrentes>>
+  /** Al reanudar uno en pausa, se saltan las fechas que pasaron. */
+  actualizarRecurrente(id: number, c: Pick<Recurrente, 'frecuencia' | 'fin' | 'activa'>): Promise<Resultado<Recurrente>>
+  borrarRecurrente(id: number): Promise<Resultado<void>>
+  /** Crea los apuntes recurrentes que tocan hasta hoy. */
+  generarRecurrentes(): Promise<Resultado<ResultadoRecurrentes>>
+
+  listarAdjuntos(entidad: Adjunto['entidad'], id: number): Promise<Resultado<Adjunto[]>>
+  /** Abre el diálogo de archivos y copia los elegidos a la carpeta de la app. */
+  adjuntar(entidad: Adjunto['entidad'], id: number): Promise<Resultado<Adjunto[]>>
+  /** Elige archivos antes de que exista el registro; devuelve fichas para adjuntarlos al guardar. */
+  elegirArchivos(): Promise<Resultado<{ ficha: string; nombre: string }[]>>
+  adjuntarElegidos(entidad: Adjunto['entidad'], id: number, fichas: string[]): Promise<Resultado<Adjunto[]>>
+  abrirAdjunto(id: number): Promise<Resultado<void>>
+  borrarAdjunto(id: number): Promise<Resultado<void>>
+
+  resumen(desde: string, hasta: string): Promise<Resultado<Resumen>>
+
+  /** Modelos con su estado (pendiente, próximo, presentado) a fecha de `hoy`. */
+  calendarioFiscal(hoy: string): Promise<Resultado<ObligacionConEstado[]>>
+  registrarPresentacion(p: PresentacionNueva): Promise<Resultado<Presentacion>>
+  borrarPresentacion(id: number): Promise<Resultado<void>>
+
+  /** Emite la factura de un ingreso y genera su registro VERI*FACTU (no lo envía). */
+  listarFacturas(desde: string, hasta: string): Promise<Resultado<Factura[]>>
+  /** HTML de la vista previa de la factura de un ingreso (sin emitirla). */
+  vistaPreviaFactura(ingresoId: number): Promise<Resultado<string>>
+  /** PDF de la vista previa; pregunta dónde guardarlo. */
+  guardarPdfBorrador(ingresoId: number): Promise<Resultado<string | null>>
+  emitirFactura(ingresoId: number): Promise<Resultado<Factura>>
+  detalleFactura(facturaId: number): Promise<Resultado<DetalleFactura>>
+  /** Genera el PDF, pregunta dónde guardarlo y lo abre. Devuelve la ruta o null si se cancela. */
+  guardarPdfFactura(facturaId: number): Promise<Resultado<string | null>>
+  /** XML de la petición que se enviaría a la AEAT. */
+  xmlVerifactu(facturaId: number): Promise<Resultado<string>>
+  /** Emite una rectificativa por diferencias (serie R). Como las demás, no se envía a VERI*FACTU. */
+  rectificarFactura(facturaId: number, datos: DatosRectificacion): Promise<Resultado<Factura>>
+  anularFactura(facturaId: number): Promise<Resultado<Factura>>
+  enviarVerifactu(facturaId: number): Promise<Resultado<void>>
+  /** Estimación de la declaración de la renta del ejercicio con los datos guardados. */
+  estimacionRenta(ejercicio: number): Promise<Resultado<VistaRenta>>
+  /** Guarda los datos que no salen de la contabilidad (otras rentas, hijos...) y recalcula. */
+  guardarDatosRenta(ejercicio: number, datos: DatosRenta): Promise<Resultado<VistaRenta>>
+  /** Casillas de un modelo calculadas con tus datos. */
+  calcularModelo(modelo: Modelo, ejercicio: number, periodo: Periodo): Promise<Resultado<ResultadoModelo>>
+  /** Genera el .txt del modelo y pregunta dónde guardarlo. Devuelve la ruta y los avisos, o null si se cancela. */
+  /** Guarda los libros registro del IRPF (trimestre 0 = año completo). Excel con las dos hojas, o dos CSV. */
+  exportarLibros(ejercicio: number, trimestre: number, formato: 'xlsx' | 'csv'): Promise<Resultado<string[] | null>>
+  guardarFicheroModelo(modelo: Modelo, ejercicio: number, periodo: Periodo): Promise<Resultado<{ ruta: string; avisos: string[] } | null>>
+  leerAjustesModelos(ejercicio: number): Promise<Resultado<AjustesModelos>>
+  guardarAjustesModelos(ejercicio: number, a: AjustesModelos): Promise<Resultado<AjustesModelos>>
+  /** Muestra la carpeta donde están la base de datos y los adjuntos (para copias de seguridad). */
+  abrirCarpetaDatos(): Promise<Resultado<void>>
+
+  informeIngresosGastos(ejercicio: number, hoy: string): Promise<Resultado<InformeIngresosGastos>>
+  informeImpuestos(ejercicio: number, hoy: string): Promise<Resultado<InformeImpuestos>>
+  informePrevision(ejercicio: number, hoy: string): Promise<Resultado<Prevision>>
+  /** % de los ingresos del año que llevó retención (decide si el año siguiente hay que presentar el 130). */
+  ingresosConRetencion(ejercicio: number): Promise<Resultado<{ total: number; conRetencion: number; pct: number | null }>>
+  simularIrpf(ejercicio: number, entrada: EntradaSimulador): Promise<Resultado<ResultadoSimulador>>
+
+  /** Asistente de ayuda local: estado del modelo (descargado o no) y su información. */
+  estadoAsistente(): Promise<Resultado<{ estado: EstadoAsistente; modelo: InfoModeloAsistente }>>
+  /** Descarga el modelo (una vez). Termina al acabar o al cancelar; el progreso llega como evento. */
+  descargarModeloAsistente(): Promise<Resultado<EstadoAsistente>>
+  cancelarDescargaAsistente(): Promise<Resultado<void>>
+  /** Responde una duda general; los trozos de la respuesta llegan como eventos con el mismo id. */
+  preguntarAsistente(id: string, pregunta: string, historial: MensajeChat[]): Promise<Resultado<RespuestaAsistente>>
+  cancelarPreguntaAsistente(id: string): Promise<Resultado<void>>
+
+  /** Elige los ZIP (o carpetas) exportados de Declarando y prepara la importación; null si se cancela. */
+  /** Abre un extracto del banco (Norma 43 o CSV) y propone qué hacer con cada movimiento. */
+  analizarBanco(): Promise<Resultado<VistaBanco | null>>
+  aplicarBanco(decisiones: DecisionBanco[]): Promise<Resultado<ResultadoBanco>>
+  analizarImportacion(): Promise<Resultado<VistaImportacion | null>>
+  /** Importa lo preparado. Con borrarAntes, guarda antes una copia de la base de datos y borra ingresos y gastos. */
+  confirmarImportacion(opciones: { borrarAntes: boolean; paises: Record<string, string> }): Promise<Resultado<ResultadoImportacion & { copia: string | null }>>
+}
+
+/** Eventos que el proceso principal envía a la interfaz. */
+export interface EventosGestoria {
+  /** Devuelve la función para dejar de escuchar. */
+  alAsistente(cb: (e: EventoAsistente) => void): () => void
+}
+
+export const CANAL_ASISTENTE = 'gestoria-evento:asistente'
+
+export const METODOS_API = [
+  'leerPerfil', 'guardarPerfil',
+  'listarClientes', 'crearCliente', 'actualizarCliente', 'borrarCliente',
+  'listarIngresos', 'crearIngreso', 'actualizarIngreso', 'borrarIngreso', 'actualizarCobro', 'pendientesDeCobro',
+  'listarGastos', 'crearGasto', 'actualizarGasto', 'borrarGasto',
+  'listarRecurrentes', 'crearRecurrente', 'actualizarRecurrente', 'borrarRecurrente', 'generarRecurrentes',
+  'listarAdjuntos', 'adjuntar', 'elegirArchivos', 'adjuntarElegidos', 'abrirAdjunto', 'borrarAdjunto',
+  'resumen', 'calendarioFiscal', 'registrarPresentacion', 'borrarPresentacion',
+  'listarFacturas', 'vistaPreviaFactura', 'guardarPdfBorrador', 'emitirFactura', 'detalleFactura', 'guardarPdfFactura', 'xmlVerifactu', 'anularFactura', 'rectificarFactura', 'enviarVerifactu',
+  'estimacionRenta', 'guardarDatosRenta',
+  'calcularModelo', 'guardarFicheroModelo', 'exportarLibros', 'leerAjustesModelos', 'guardarAjustesModelos',
+  'abrirCarpetaDatos', 'informeIngresosGastos', 'informeImpuestos', 'informePrevision', 'simularIrpf', 'ingresosConRetencion',
+  'estadoAsistente', 'descargarModeloAsistente', 'cancelarDescargaAsistente', 'preguntarAsistente', 'cancelarPreguntaAsistente',
+  'analizarImportacion', 'confirmarImportacion', 'analizarBanco', 'aplicarBanco'
+] as const satisfies readonly (keyof ApiGestoria)[]

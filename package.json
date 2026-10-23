@@ -1,0 +1,59 @@
+{
+  "name": "gestoria",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Gestoría de escritorio para un autónomo en España",
+  "main": "out/main/index.js",
+  "scripts": {
+    "postinstall": "electron-builder install-app-deps",
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "pretest": "npm rebuild better-sqlite3",
+    "test": "vitest run",
+    "posttest": "electron-builder install-app-deps",
+    "test:node": "vitest run",
+    "dist:mac": "electron-vite build && electron-builder --mac"
+  },
+  "build": {
+    "appId": "es.gestoria.app",
+    "productName": "Gestoría",
+    "files": [
+      "out/**/*"
+    ],
+    "mac": {
+      "category": "public.app-category.finance",
+      "target": [
+        "dmg"
+      ]
+    },
+    "asarUnpack": [
+      "node_modules/node-llama-cpp/**",
+      "node_modules/@node-llama-cpp/**"
+    ]
+  },
+  "dependencies": {
+    "better-sqlite3": "^13.0.3",
+    "node-llama-cpp": "^3.22.2",
+    "qrcode": "^1.5.4",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^9.6.0",
+    "@types/node": "^24.19.2",
+    "@types/qrcode": "^1.5.6",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.2",
+    "electron": "^45.0.0",
+    "electron-builder": "^26.15.3",
+    "electron-vite": "^6.0.0",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.5",
+    "vitest": "^5.0.5"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

@@ -1,0 +1,230 @@
+import { useEffect, useState } from 'react'
+import { deduciblesPara } from '../../core/deducibles'
+import { calcularGasto, CATEGORIAS_GASTO, TIPOS_IVA } from '../../core/fiscalidad'
+import type { Gasto, GastoNuevo, OperacionGasto, Perfil } from '../../core/tipos'
+import { api, llamar, mensajes } from '../api'
+import {
+  Adjuntos, AdjuntosPendientes, type ArchivoElegido, Campo, CampoEuros, CampoPct, Errores, euros, hoy, periodoActual, rango, SelectorPeriodo, type Periodo
+} from '../componentes'
+import { BotonIcono, Icono } from '../iconos'
+import { FormRecurrente, PanelRecurrentes, textoGenerados } from './Recurrentes'
+import { ahorroGasto } from '../../core/ahorro'
+
+const OPERACIONES: Record<OperacionGasto, string> = {
+  nacional: 'Proveedor español con IVA',
+  intracomunitaria: 'Proveedor UE sin IVA (autoliquidas)',
+  extracomunitaria: 'Proveedor fuera de la UE (autoliquidas)',
+  sin_iva: 'Sin IVA (exento o no sujeto)'
+}
+
+function deCategoria(perfil: Perfil, id: string, base: Partial<GastoNuevo> = {}): GastoNuevo {
+  const c = CATEGORIAS_GASTO.find((x) => x.id === id) ?? CATEGORIAS_GASTO[CATEGORIAS_GASTO.length - 1]!
+  const actividadId = base.actividadId ?? null
+  const ded = deduciblesPara(perfil, actividadId, c.id)
+  return {
+    fecha: hoy(), proveedor: '', nifProveedor: '', paisProveedor: 'ES', numeroFactura: '', concepto: '',
+    base: 0, bienInversion: false, notas: '', ...base, actividadId,
+    categoria: c.id, operacion: c.operacion, tipoIva: c.tipoIva, deduciblePctIrpf: ded.irpf,
+    deduciblePctIva: ded.iva, retencionPct: c.retencionPct
+  }
+}
+
+export function PaginaGastos({ perfil }: { perfil: Perfil }) {
+  const [periodo, setPeriodo] = useState<Periodo>(periodoActual())
+  const [gastos, setGastos] = useState<Gasto[]>([])
+  const [editando, setEditando] = useState<{ id: number | null; datos: GastoNuevo; copiaDe?: string; clave?: number } | null>(null)
+  const [errores, setErrores] = useState<string[]>([])
+  const [pendientes, setPendientes] = useState<ArchivoElegido[]>([])
+  const [repitiendo, setRepitiendo] = useState<Gasto | null>(null)
+  const [versionRec, setVersionRec] = useState(0)
+  const [hecho, setHecho] = useState<string | null>(null)
+
+  const cargar = () => {
+    const { desde, hasta } = rango(periodo)
+    return llamar(api.listarGastos(desde, hasta)).then(setGastos).catch((e) => setErrores(mensajes(e)))
+  }
+  useEffect(() => { void cargar() }, [periodo])
+  // Si la app lleva abierta desde otro día, crea los recurrentes que hayan tocado.
+  useEffect(() => {
+    llamar(api.generarRecurrentes()).then((r) => { const t = textoGenerados(r); if (t) { setHecho(t); void cargar() } }).catch(() => {})
+  }, [])
+
+  // Tipo marginal de IRPF por año (de la previsión), para calcular el ahorro de cada gasto.
+  const [marginales, setMarginales] = useState<Record<number, number>>({})
+  const anios = [...new Set([periodo.anio, ...(editando ? [Number(editando.datos.fecha.slice(0, 4))] : [])])].filter((a) => a > 2000 && !(a in marginales))
+  useEffect(() => {
+    for (const a of anios) {
+      llamar(api.informePrevision(a, hoy()))
+        .then((p) => setMarginales((m) => ({ ...m, [a]: p.simulacion.tipoMarginal })))
+        .catch(() => setMarginales((m) => ({ ...m, [a]: 0 })))
+    }
+  }, [anios.join(',')]) // eslint-disable-line react-hooks/exhaustive-deps
+  const ahorro = (g: GastoNuevo) => ahorroGasto(g, marginales[Number(g.fecha.slice(0, 4))] ?? 0)
+
+  const d = editando?.datos
+  const set = (cambios: Partial<GastoNuevo>) =>
+    editando && setEditando({ ...editando, datos: { ...editando.datos, ...cambios } })
+
+  const guardar = async () => {
+    if (!editando) return
+    try {
+      if (editando.id === null) {
+        const g = await llamar(api.crearGasto(editando.datos))
+        // Si falla el adjunto, un segundo Guardar actualiza este gasto en vez de duplicarlo.
+        setEditando({ ...editando, id: g.id })
+        if (pendientes.length) await llamar(api.adjuntarElegidos('gasto', g.id, pendientes.map((p) => p.ficha)))
+      } else {
+        await llamar(api.actualizarGasto(editando.id, editando.datos))
+      }
+      setPendientes([])
+      setEditando(null)
+      setErrores([])
+      await cargar()
+    } catch (e) {
+      setErrores(mensajes(e))
+    }
+  }
+
+  const borrar = async (g: Gasto) => {
+    if (!confirm(`¿Borrar el gasto "${g.concepto}"?`)) return
+    try {
+      await llamar(api.borrarGasto(g.id))
+      await cargar()
+    } catch (e) {
+      setErrores(mensajes(e))
+    }
+  }
+
+  const deducible = deduciblesPara(perfil, d?.actividadId ?? null, d?.categoria ?? 'otros')
+  const cuotas = d ? calcularGasto(d) : null
+  const nombreCategoria = (id: string) => CATEGORIAS_GASTO.find((c) => c.id === id)?.nombre ?? id
+  const total = (k: 'base' | 'cuotaIva') => gastos.reduce((a, g) => a + g[k], 0)
+  const totalAhorro = gastos.reduce((a, g) => a + ahorro(g).total, 0)
+
+  return (
+    <section>
+      <div className="cabecera">
+        <h1>Gastos</h1>
+        <SelectorPeriodo periodo={periodo} onChange={setPeriodo} />
+        <button onClick={() => { setEditando({ id: null, datos: deCategoria(perfil, 'otros') }); setPendientes([]); setErrores([]) }}><Icono nombre="mas" />Nuevo gasto</button>
+      </div>
+      <Errores errores={errores} />
+      {hecho ? <p className="ok">{hecho}</p> : null}
+      {repitiendo ? (
+        <FormRecurrente tipo="gasto" apunte={repitiendo} onCancelar={() => setRepitiendo(null)} onHecho={(r) => {
+          setRepitiendo(null); setHecho(textoGenerados(r) ?? 'Recurrente creado.'); setVersionRec(versionRec + 1); void cargar()
+        }} />
+      ) : null}
+
+      {d ? (
+        <div className="tarjeta" key={editando.id ?? `nuevo-${editando.clave ?? 0}`}>
+          {editando.copiaDe ? <p className="nota">Copia de "{editando.copiaDe}". Cambia la fecha (y lo que haga falta) y guarda.</p> : null}
+          <div className="rejilla">
+            {perfil.actividades.length > 1 ? (
+              <Campo etiqueta="Actividad">
+                <select value={d.actividadId ?? ''} onChange={(e) => set(deCategoria(perfil, d.categoria, { ...d, actividadId: e.target.value || null }))}>
+                  <option value="">Principal ({perfil.actividades.find((a) => a.principal)?.codigo})</option>
+                  {perfil.actividades.filter((a) => !a.principal).map((a) => <option key={a.id} value={a.id}>{a.codigo} · {a.descripcion}</option>)}
+                </select>
+              </Campo>
+            ) : null}
+            <Campo etiqueta="Categoría">
+              <select value={d.categoria} onChange={(e) => set(deCategoria(perfil, e.target.value, d))}>
+                {CATEGORIAS_GASTO.map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+              </select>
+            </Campo>
+            <Campo etiqueta="Fecha"><input type="date" value={d.fecha} autoFocus={!!editando.copiaDe} onChange={(e) => set({ fecha: e.target.value })} /></Campo>
+            <Campo etiqueta="Proveedor (opcional)" ayuda={d.retencionPct > 0 || d.operacion === 'intracomunitaria' ? 'Obligatorio con retención o si es de la UE.' : undefined}><input value={d.proveedor} onChange={(e) => set({ proveedor: e.target.value })} /></Campo>
+            <Campo etiqueta="NIF del proveedor"><input value={d.nifProveedor} onChange={(e) => set({ nifProveedor: e.target.value })} /></Campo>
+            <Campo etiqueta="País del proveedor"><input value={d.paisProveedor} maxLength={2} onChange={(e) => set({ paisProveedor: e.target.value.toUpperCase() })} /></Campo>
+            <Campo etiqueta="Nº de factura"><input value={d.numeroFactura} onChange={(e) => set({ numeroFactura: e.target.value })} /></Campo>
+            <Campo etiqueta="Concepto"><input value={d.concepto} onChange={(e) => set({ concepto: e.target.value })} /></Campo>
+            <Campo etiqueta="Base imponible (€)"><CampoEuros valor={d.base} onChange={(base) => set({ base })} /></Campo>
+            <Campo etiqueta="Tipo de operación">
+              <select value={d.operacion} onChange={(e) => set({ operacion: e.target.value as OperacionGasto })}>
+                {Object.entries(OPERACIONES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+              </select>
+            </Campo>
+            <Campo etiqueta="IVA %">
+              <select value={d.tipoIva} disabled={d.operacion === 'sin_iva'} onChange={(e) => set({ tipoIva: Number(e.target.value) })}>
+                {TIPOS_IVA.map((t) => <option key={t} value={t}>{t}%</option>)}
+              </select>
+            </Campo>
+            <Campo etiqueta="% deducible en IRPF"><CampoPct valor={d.deduciblePctIrpf} onChange={(deduciblePctIrpf) => set({ deduciblePctIrpf })} /></Campo>
+            <Campo etiqueta="% deducible del IVA"><CampoPct valor={d.deduciblePctIva} onChange={(deduciblePctIva) => set({ deduciblePctIva })} /></Campo>
+            <Campo etiqueta="Retención que practicas %" ayuda="Alquileres 19% (modelo 115), profesionales 15% (modelo 111).">
+              <CampoPct valor={d.retencionPct} onChange={(retencionPct) => set({ retencionPct })} />
+            </Campo>
+            <label className="check">
+              <input type="checkbox" checked={d.bienInversion} onChange={(e) => set({ bienInversion: e.target.checked })} />
+              Bien de inversión (se amortiza)
+            </label>
+            <Campo etiqueta="Notas"><input value={d.notas} onChange={(e) => set({ notas: e.target.value })} /></Campo>
+          </div>
+          <p className="nota deducible">
+            {deducible.explicacion}
+            {d.deduciblePctIrpf !== deducible.irpf || d.deduciblePctIva !== deducible.iva
+              ? <> <button className="enlace" onClick={() => set({ deduciblePctIrpf: deducible.irpf, deduciblePctIva: deducible.iva })}>Volver al % calculado</button></>
+              : null}
+          </p>
+          {cuotas ? (
+            <p className="nota">
+              Cuota de IVA {euros(cuotas.cuotaIva)}
+              {d.operacion === 'intracomunitaria' || d.operacion === 'extracomunitaria' ? ' (autoliquidada: no la pagas al proveedor)' : ''}
+              {cuotas.cuotaRetencion ? ` · Retención a ingresar ${euros(cuotas.cuotaRetencion)}` : ''}
+            </p>
+          ) : null}
+          {d.base > 0 ? (() => {
+            const a = ahorro(d)
+            const tipo = marginales[Number(d.fecha.slice(0, 4))]
+            return (
+              <p className="nota ahorro">
+                <Icono nombre="cartera" tamano={14} /> Este gasto te ahorra <strong>{euros(a.total)}</strong> en impuestos:
+                {' '}{euros(a.iva)} de IVA en el 303 y {euros(a.irpf)} de IRPF{tipo ? ` (a tu tipo marginal del ${tipo.toLocaleString('es-ES')} %)` : ' (sin previsión de renta para ese año)'}
+                {d.bienInversion ? ', repartido en los años de amortización' : ''}. Te cuesta de verdad {euros(a.costeReal)}.
+              </p>
+            )
+          })() : null}
+          {editando.id !== null
+            ? <Adjuntos entidad="gasto" id={editando.id} />
+            : <AdjuntosPendientes archivos={pendientes} onChange={setPendientes} />}
+          <div className="acciones">
+            <button onClick={guardar}><Icono nombre="guardar" />Guardar</button>
+            <button className="secundario" onClick={() => { setEditando(null); setPendientes([]) }}>Cancelar</button>
+          </div>
+        </div>
+      ) : null}
+
+      <table>
+        <thead><tr><th>Fecha</th><th>Proveedor</th><th>Concepto</th><th>Categoría</th><th className="num">Base</th><th className="num">IVA</th><th className="num" title="IVA que recuperas + IRPF que dejas de pagar, a tu tipo marginal">Ahorro</th><th /></tr></thead>
+        <tbody>
+          {gastos.map((g) => (
+            <tr key={g.id}>
+              <td>{g.fecha}</td>
+              <td>{g.proveedor || '—'}</td>
+              <td>{g.concepto}</td>
+              <td>{nombreCategoria(g.categoria)}{g.bienInversion ? ' · inversión' : ''}</td>
+              <td className="num">{euros(g.base)}</td>
+              <td className="num">{euros(g.cuotaIva)}</td>
+              <td className="num ahorro">{euros(ahorro(g).total)}</td>
+              <td className="derecha">
+                <BotonIcono icono="editar" texto="Editar" onClick={() => { const { id, cuotaIva: _a, cuotaRetencion: _b, ...datos } = g; setEditando({ id, datos }) }} />
+                <BotonIcono icono="duplicar" texto="Duplicar con otra fecha" onClick={() => {
+                  const { id: _id, cuotaIva: _a, cuotaRetencion: _b, ...datos } = g
+                  setEditando({ id: null, datos: { ...datos, fecha: hoy(), numeroFactura: '' }, copiaDe: g.concepto || g.proveedor || 'gasto', clave: Date.now() })
+                  setPendientes([]); setErrores([])
+                }} />
+                <BotonIcono icono="repetir" texto="Repetir cada mes, trimestre o año" onClick={() => { setRepitiendo(g); setEditando(null) }} />
+                <BotonIcono icono="borrar" texto="Borrar" peligro onClick={() => borrar(g)} />
+              </td>
+            </tr>
+          ))}
+          {!gastos.length ? <tr><td colSpan={8} className="vacio">No hay gastos en este periodo.</td></tr> : null}
+        </tbody>
+        <tfoot><tr><td colSpan={4}>Total</td><td className="num">{euros(total('base'))}</td><td className="num">{euros(total('cuotaIva'))}</td><td className="num ahorro">{euros(totalAhorro)}</td><td /></tr></tfoot>
+      </table>
+
+      <PanelRecurrentes tipo="gasto" version={versionRec} onCambio={cargar} />
+    </section>
+  )
+}
