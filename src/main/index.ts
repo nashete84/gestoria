@@ -10,6 +10,9 @@ import * as renta from '../core/db/renta'
 import * as informes from '../core/db/informes'
 import * as importacion from '../core/db/importacion'
 import * as recurrentes from '../core/db/recurrentes'
+import { librosRegistro } from '../core/db/libros'
+import { csvLibro } from '../core/libros'
+import { escribirXlsx } from '../core/xlsx'
 import { analizarDeclarando, type PlanImportacion } from '../core/importacion/declarando'
 import { guardarAdjuntoImportado, leerOrigenes, textoPdf } from './importar'
 import * as repos from '../core/db/repos'
@@ -236,6 +239,25 @@ const handlers: Handlers = {
     // Los ficheros de la AEAT van en ISO-8859-1.
     await writeFile(r.filePath, Buffer.from(f.contenido, 'latin1'))
     return { ruta: r.filePath, avisos: f.avisos }
+  },
+  exportarLibros: async (ej, t, formato) => {
+    const l = librosRegistro(db, id(ej), Number(t))
+    const xlsx = formato !== 'csv'
+    const r = await dialog.showSaveDialog(ventana!, {
+      title: 'Guardar libros registro', defaultPath: l.nombre + (xlsx ? '.xlsx' : '_ingresos.csv'),
+      filters: [xlsx ? { name: 'Excel', extensions: ['xlsx'] } : { name: 'CSV', extensions: ['csv'] }]
+    })
+    if (r.canceled || !r.filePath) return null
+    if (xlsx) {
+      await writeFile(r.filePath, escribirXlsx(l.hojas))
+      return [r.filePath]
+    }
+    // CSV: un archivo por libro, el de gastos al lado del de ingresos.
+    const rutaGastos = r.filePath.replace(/(_ingresos)?\.csv$/i, '') + '_gastos.csv'
+    const rutaIngresos = /_ingresos\.csv$/i.test(r.filePath) ? r.filePath : r.filePath.replace(/\.csv$/i, '') + '_ingresos.csv'
+    await writeFile(rutaIngresos, csvLibro(l.hojas[0]!.filas), 'utf8')
+    await writeFile(rutaGastos, csvLibro(l.hojas[1]!.filas), 'utf8')
+    return [rutaIngresos, rutaGastos]
   },
   leerAjustesModelos: (ej) => modelos.leerAjustesModelos(db, id(ej)),
   guardarAjustesModelos: (ej, a) => modelos.guardarAjustesModelos(db, id(ej), a),

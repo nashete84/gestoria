@@ -89,6 +89,8 @@ export interface ApiGestoria {
   /** Casillas de un modelo calculadas con tus datos. */
   calcularModelo(modelo: Modelo, ejercicio: number, periodo: Periodo): Promise<Resultado<ResultadoModelo>>
   /** Genera el .txt del modelo y pregunta dónde guardarlo. Devuelve la ruta y los avisos, o null si se cancela. */
+  /** Guarda los libros registro del IRPF (trimestre 0 = año completo). Excel con las dos hojas, o dos CSV. */
+  exportarLibros(ejercicio: number, trimestre: number, formato: 'xlsx' | 'csv'): Promise<Resultado<string[] | null>>
   guardarFicheroModelo(modelo: Modelo, ejercicio: number, periodo: Periodo): Promise<Resultado<{ ruta: string; avisos: string[] } | null>>
   leerAjustesModelos(ejercicio: number): Promise<Resultado<AjustesModelos>>
   guardarAjustesModelos(ejercicio: number, a: AjustesModelos): Promise<Resultado<AjustesModelos>>
@@ -135,7 +137,7 @@ export const METODOS_API = [
   'resumen', 'calendarioFiscal', 'registrarPresentacion', 'borrarPresentacion',
   'listarFacturas', 'vistaPreviaFactura', 'guardarPdfBorrador', 'emitirFactura', 'detalleFactura', 'guardarPdfFactura', 'xmlVerifactu', 'anularFactura', 'enviarVerifactu',
   'estimacionRenta', 'guardarDatosRenta',
-  'calcularModelo', 'guardarFicheroModelo', 'leerAjustesModelos', 'guardarAjustesModelos',
+  'calcularModelo', 'guardarFicheroModelo', 'exportarLibros', 'leerAjustesModelos', 'guardarAjustesModelos',
   'abrirCarpetaDatos', 'informeIngresosGastos', 'informeImpuestos', 'informePrevision', 'simularIrpf', 'ingresosConRetencion',
   'estadoAsistente', 'descargarModeloAsistente', 'cancelarDescargaAsistente', 'preguntarAsistente', 'cancelarPreguntaAsistente',
   'analizarImportacion', 'confirmarImportacion'

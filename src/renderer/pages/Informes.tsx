@@ -5,12 +5,14 @@ import type { Prevision } from '../../core/prevision'
 import { api, llamar, mensajes } from '../api'
 import { Errores, euros, hoy } from '../componentes'
 import { GraficoColumnas, Reparto } from '../graficos'
+import { Icono } from '../iconos'
 
-type Vista = 'ingresos-gastos' | 'prevision' | 'impuestos'
+type Vista = 'ingresos-gastos' | 'prevision' | 'impuestos' | 'libros'
 const VISTAS: { id: Vista; nombre: string }[] = [
   { id: 'ingresos-gastos', nombre: 'Gastos e ingresos' },
   { id: 'prevision', nombre: 'Previsión de ingresos' },
-  { id: 'impuestos', nombre: 'Impuestos' }
+  { id: 'impuestos', nombre: 'Impuestos' },
+  { id: 'libros', nombre: 'Libros registro' }
 ]
 const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
 const fechaCorta = (f: string) => `${f.slice(8, 10)}/${f.slice(5, 7)}/${f.slice(0, 4)}`
@@ -34,6 +36,7 @@ export function PaginaInformes() {
       {vista === 'ingresos-gastos' ? <IngresosGastos ejercicio={ejercicio} /> : null}
       {vista === 'prevision' ? <PrevisionIngresos ejercicio={ejercicio} /> : null}
       {vista === 'impuestos' ? <Impuestos ejercicio={ejercicio} /> : null}
+      {vista === 'libros' ? <LibrosRegistro ejercicio={ejercicio} /> : null}
     </section>
   )
 }
@@ -140,5 +143,37 @@ function Impuestos({ ejercicio }: { ejercicio: number }) {
       {r.avisos.length ? <p className="nota">{r.avisos.join(' ')}</p> : null}
       <p className="nota">"A tu favor": a devolver o a compensar en los siguientes periodos. El IVA no es un coste tuyo: lo cobras a tus clientes y se lo pasas a Hacienda.</p>
     </>
+  )
+}
+
+/** Exporta los libros registro del IRPF con el formato común de la AEAT. */
+function LibrosRegistro({ ejercicio }: { ejercicio: number }) {
+  const [trimestre, setTrimestre] = useState(0)
+  const [hecho, setHecho] = useState<string[] | null>(null)
+  const [errores, setErrores] = useState<string[]>([])
+  const exportar = async (formato: 'xlsx' | 'csv') => {
+    setErrores([]); setHecho(null)
+    try { setHecho(await llamar(api.exportarLibros(ejercicio, trimestre, formato))) } catch (e) { setErrores(mensajes(e)) }
+  }
+  return (
+    <div className="tarjeta">
+      <p className="nota">
+        Libro de ventas e ingresos y libro de compras y gastos del IRPF, con las columnas y claves del formato común de la AEAT
+        (las mismas que usa Declarando). Es lo que te pediría Hacienda en una comprobación; el Excel es el formato que admite la Sede.
+      </p>
+      <div className="acciones">
+        <select value={trimestre} onChange={(e) => setTrimestre(Number(e.target.value))} aria-label="Periodo" style={{ width: 'auto' }}>
+          <option value={0}>Año {ejercicio} completo</option>
+          {[1, 2, 3, 4].map((t) => <option key={t} value={t}>Del 1 de enero al final del {t}T</option>)}
+        </select>
+        <button onClick={() => exportar('xlsx')}><Icono nombre="descargar" />Exportar Excel</button>
+        <button className="secundario" onClick={() => exportar('csv')}><Icono nombre="descargar" />Exportar CSV</button>
+      </div>
+      <Errores errores={errores} />
+      {hecho ? <p className="ok">Guardado en {hecho.join(' y ')}.</p> : null}
+      <p className="nota">
+        Los bienes de inversión salen marcados con "S" y gasto deducible 0: se deducen por su amortización, que está en los modelos.
+      </p>
+    </div>
   )
 }
