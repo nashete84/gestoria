@@ -179,3 +179,4 @@ h2 .icono { vertical-align: -3px; margin-right: 6px; }
 p.ahorro { color: var(--suave); }
 p.ahorro strong { color: #2a9d55; }
 p.ahorro .icono { vertical-align: -2px; color: #2a9d55; }
+tr.resaltada td { background: var(--acento-suave); font-weight: 600; }

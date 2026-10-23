@@ -240,3 +240,11 @@ En el formulario de gasto: "Este gasto te ahorra X € en impuestos: Y € de IV
 - **IRPF:** base × % deducible × **tipo marginal** del año, el mismo dato que muestra la previsión (cuánto IRPF más pagarías con 1.000 € más de rendimiento, con escalas de Madrid, mínimos y el 5 % de difícil justificación). Descartado: recalcular la renta entera con y sin cada gasto (exacto, pero una renta por fila; con el tipo marginal la diferencia es de céntimos salvo en un cambio de tramo).
 - **Bienes de inversión:** el ahorro de IRPF es el total, y el texto dice que se reparte en los años de amortización.
 - Mismo criterio de gasto deducible que la renta de la app (base × %). Pendiente aparte: la renta no suma como gasto el IVA que no puedes deducir (en uso mixto sí es gasto en el IRPF).
+
+## Simulador de cuota de autónomos (2026-10-23, a petición de Nacho)
+
+En Informes → Cuota de autónomos: rendimiento neto mensual para la Seguridad Social, tramo, cuota mínima y máxima, lo que pagas ahora (la última cuota registrada) y la regularización aproximada del año. Se puede probar otro rendimiento a mano. Tabla de los 15 tramos con el tuyo resaltado.
+- **Datos oficiales 2026:** Orden PJC/297/2026, art. 18 (BOE-A-2026-7296): mismas bases que 2025, base máxima 5.101,20 €, tipo 31,5 % (28,30 comunes + 1,30 profesionales + 0,90 cese + 0,10 FP + 0,90 MEI). 2025: base máxima 4.909,50 € y 31,4 % (MEI 0,8). Años sin tabla usan la más cercana y lo avisan.
+- **Rendimiento:** (ingresos − gastos deducibles + cuotas de autónomo) − 7 % de gastos genéricos, entre 12; ingresos y gastos de la previsión del año (lo registrado + la media de los meses que faltan). Las cuotas del año = la última cuota × 12.
+- **Regularización:** si tu base está por debajo de la mínima del tramo, pagas la diferencia × tipo × 12; si está por encima de la máxima, te la devuelven. Es aproximada: supone la misma base todo el año.
+- Descartados: tarifa plana y autónomo societario (3 %) en la pantalla (no es su caso; la función ya admite el 3 %).

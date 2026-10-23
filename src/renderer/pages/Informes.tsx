@@ -3,15 +3,18 @@ import { NOMBRE_MODELO } from '../../core/calendario'
 import { NOMBRE_GRUPO, type InformeImpuestos, type InformeIngresosGastos } from '../../core/informes'
 import type { Prevision } from '../../core/prevision'
 import { api, llamar, mensajes } from '../api'
-import { Errores, euros, hoy } from '../componentes'
+import { CampoEuros, Errores, euros, hoy } from '../componentes'
+import { cuotaDeBase, parametrosReta, regularizar, rendimientoMensualReta } from '../../core/autonomos'
+import type { Gasto } from '../../core/tipos'
 import { GraficoColumnas, Reparto } from '../graficos'
 import { Icono } from '../iconos'
 
-type Vista = 'ingresos-gastos' | 'prevision' | 'impuestos' | 'libros'
+type Vista = 'ingresos-gastos' | 'prevision' | 'impuestos' | 'autonomos' | 'libros'
 const VISTAS: { id: Vista; nombre: string }[] = [
   { id: 'ingresos-gastos', nombre: 'Gastos e ingresos' },
   { id: 'prevision', nombre: 'Previsión de ingresos' },
   { id: 'impuestos', nombre: 'Impuestos' },
+  { id: 'autonomos', nombre: 'Cuota de autónomos' },
   { id: 'libros', nombre: 'Libros registro' }
 ]
 const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
@@ -36,6 +39,7 @@ export function PaginaInformes() {
       {vista === 'ingresos-gastos' ? <IngresosGastos ejercicio={ejercicio} /> : null}
       {vista === 'prevision' ? <PrevisionIngresos ejercicio={ejercicio} /> : null}
       {vista === 'impuestos' ? <Impuestos ejercicio={ejercicio} /> : null}
+      {vista === 'autonomos' ? <CuotaAutonomos ejercicio={ejercicio} /> : null}
       {vista === 'libros' ? <LibrosRegistro ejercicio={ejercicio} /> : null}
     </section>
   )
@@ -175,5 +179,74 @@ function LibrosRegistro({ ejercicio }: { ejercicio: number }) {
         Los bienes de inversión salen marcados con "S" y gasto deducible 0: se deducen por su amortización, que está en los modelos.
       </p>
     </div>
+  )
+}
+
+/** Simulador de la cuota de autónomos por ingresos reales, con la previsión del año. */
+function CuotaAutonomos({ ejercicio }: { ejercicio: number }) {
+  const [datos, setDatos] = useState<{ prevision: Prevision; cuotas: Gasto[] } | null>(null)
+  const [errores, setErrores] = useState<string[]>([])
+  const [manual, setManual] = useState<number | null>(null)
+  useEffect(() => {
+    setManual(null)
+    Promise.all([llamar(api.informePrevision(ejercicio, hoy())), llamar(api.listarGastos(`${ejercicio}-01-01`, `${ejercicio}-12-31`))])
+      .then(([prevision, gastos]) => { setDatos({ prevision, cuotas: gastos.filter((g) => g.categoria === 'cuota_autonomo') }); setErrores([]) })
+      .catch((e) => setErrores(mensajes(e)))
+  }, [ejercicio])
+  if (!datos) return <Errores errores={errores} />
+
+  const p = parametrosReta(ejercicio)
+  const { prevision, cuotas } = datos
+  // Cuota de ahora: la última registrada. Las del año: la que pagas × 12 (la previsión ya las cuenta como gasto).
+  const ultima = [...cuotas].sort((a, b) => b.fecha.localeCompare(a.fecha))[0]
+  const cuotaMensual = ultima?.base ?? null
+  const cuotasAnio = cuotaMensual !== null ? cuotaMensual * 12 : 0
+  const calculado = rendimientoMensualReta(prevision.ingresosAnio, prevision.gastosAnio, cuotasAnio, p)
+  const rendimiento = manual ?? calculado
+  const r = regularizar(rendimiento, cuotaMensual, p)
+  const nombreTramo = (t: typeof r.tramo) => `${t.tabla === 'reducida' ? 'Tabla reducida' : 'Tabla general'}, tramo ${t.numero}`
+
+  return (
+    <>
+      <Errores errores={errores} />
+      <div className="cifras">
+        <Cifra titulo="Rendimiento neto mensual" valor={euros(rendimiento)} nota={manual === null ? 'Con la previsión del año, menos el 7 % de gastos genéricos' : 'El que has escrito'} />
+        <Cifra titulo="Tu tramo" valor={nombreTramo(r.tramo)} nota={`Base de ${euros(r.tramo.baseMinima)} a ${euros(r.tramo.baseMaxima)}`} />
+        <Cifra titulo="Cuota mínima de tu tramo" valor={euros(r.cuotaMinima)} nota={`Al mes. Máxima ${euros(r.cuotaMaxima)}`} />
+        <Cifra titulo="Lo que pagas ahora" valor={cuotaMensual !== null ? euros(cuotaMensual) : '—'} nota={cuotaMensual !== null ? `Última cuota registrada (${fechaCorta(ultima!.fecha)})` : 'No hay cuotas de autónomo registradas este año'} />
+        {cuotaMensual !== null ? (
+          <Cifra titulo={r.diferenciaAnual > 0 ? 'Te reclamarán (aprox.)' : r.diferenciaAnual < 0 ? 'Te devolverán (aprox.)' : 'Regularización'}
+            valor={r.diferenciaAnual ? euros(Math.abs(r.diferenciaAnual)) : 'Nada'}
+            nota={r.diferenciaAnual > 0 ? 'Por el año: cotizas por debajo de la base mínima de tu tramo' : r.diferenciaAnual < 0 ? 'Por el año: cotizas por encima de la máxima de tu tramo' : 'Tu base está dentro de tu tramo'} />
+        ) : null}
+      </div>
+      <div className="tarjeta">
+        <div className="acciones">
+          <label>Probar con otro rendimiento neto mensual: </label>
+          <span style={{ width: 160 }}><CampoEuros valor={rendimiento} onChange={(c) => setManual(c)} /></span>
+          {manual !== null ? <button className="secundario" onClick={() => setManual(null)}>Volver a la previsión</button> : null}
+        </div>
+        <p className="nota">
+          Cómo se calcula: ingresos del año ({euros(prevision.ingresosAnio)}) − gastos deducibles ({euros(prevision.gastosAnio)}) + cuotas de autónomo
+          ({euros(cuotasAnio)}), menos el {p.gastosGenericos} % de gastos genéricos, entre 12. La cuota es la base × {p.tipo.toLocaleString('es-ES')} %.
+          La Seguridad Social regulariza con tu renta del año, normalmente un año o dos después. Si tu cuota no encaja con tu tramo, cámbiala en Import@ss
+          (hasta 6 veces al año). {p.aproximado ? `Ojo: no hay tabla oficial para ${ejercicio}; uso la de ${p.ejercicio}.` : `Tabla oficial de ${p.ejercicio} (Orden PJC/297/2026).`}
+        </p>
+      </div>
+      <table>
+        <thead><tr><th>Tramo</th><th className="num">Rendimiento mensual hasta</th><th className="num">Base mínima</th><th className="num">Cuota mínima</th><th className="num">Base máxima</th></tr></thead>
+        <tbody>
+          {p.tramos.map((t) => (
+            <tr key={t.tabla + t.numero} className={t === r.tramo ? 'resaltada' : ''}>
+              <td>{nombreTramo(t)}</td>
+              <td className="num">{t.hasta === null ? 'Más de 6.000,00 €' : euros(t.hasta)}</td>
+              <td className="num">{euros(t.baseMinima)}</td>
+              <td className="num">{euros(cuotaDeBase(t.baseMinima, p))}</td>
+              <td className="num">{euros(t.baseMaxima)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </>
   )
 }
