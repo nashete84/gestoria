@@ -5,6 +5,7 @@ import type { Factura } from '../../core/db/facturas'
 import type { Cliente, EstadoCobro, Ingreso, IngresoNuevo, OperacionIngreso, Perfil } from '../../core/tipos'
 import { api, llamar, mensajes } from '../api'
 import { FacturaPanel } from './FacturaPanel'
+import { FormRecurrente, PanelRecurrentes, textoGenerados } from './Recurrentes'
 import {
   Adjuntos, Avisos, Campo, CampoEuros, CampoPct, Errores, euros, hoy, periodoActual, rango, SelectorPeriodo, type Periodo
 } from '../componentes'
@@ -41,6 +42,9 @@ export function EtiquetaCobro({ ingreso }: { ingreso: Pick<Ingreso, 'fechaCobro'
 export function PaginaIngresos({ perfil, onCambioCobros }: { perfil: Perfil; onCambioCobros?: () => void }) {
   const [periodo, setPeriodo] = useState<Periodo>(periodoActual())
   const [soloPendientes, setSoloPendientes] = useState(false)
+  const [repitiendo, setRepitiendo] = useState<Ingreso | null>(null)
+  const [versionRec, setVersionRec] = useState(0)
+  const [hecho, setHecho] = useState<string | null>(null)
   const [ingresos, setIngresos] = useState<Ingreso[]>([])
   const [clientes, setClientes] = useState<Cliente[]>([])
   const [editando, setEditando] = useState<{ id: number | null; datos: IngresoNuevo; facturaId: number | null; copiaDe?: string; clave?: number } | null>(null)
@@ -93,6 +97,10 @@ export function PaginaIngresos({ perfil, onCambioCobros }: { perfil: Perfil; onC
     }
   }
   useEffect(() => { void cargar() }, [periodo, soloPendientes])
+  // Si la app lleva abierta desde otro día, crea los recurrentes que hayan tocado.
+  useEffect(() => {
+    llamar(api.generarRecurrentes()).then((r) => { const t = textoGenerados(r); if (t) { setHecho(t); void cargar() } }).catch(() => {})
+  }, [])
 
   /** Marca un ingreso como cobrado hoy, o lo vuelve a dejar pendiente. */
   const cambiarCobro = async (i: Ingreso, fechaCobro: string | null) => {
@@ -171,6 +179,12 @@ export function PaginaIngresos({ perfil, onCambioCobros }: { perfil: Perfil; onC
         <button onClick={() => { setEditando({ id: null, datos: nuevo(), facturaId: null }); setAvisos([]); setErrores([]) }}><Icono nombre="mas" />Nuevo ingreso</button>
       </div>
       <Errores errores={errores} />
+      {hecho ? <p className="ok">{hecho}</p> : null}
+      {repitiendo ? (
+        <FormRecurrente tipo="ingreso" apunte={repitiendo} onCancelar={() => setRepitiendo(null)} onHecho={(r) => {
+          setRepitiendo(null); setHecho(textoGenerados(r) ?? 'Recurrente creado.'); setVersionRec(versionRec + 1); void cargar()
+        }} />
+      ) : null}
 
       {d ? (
         <div className="tarjeta" key={editando.id ?? `nuevo-${editando.clave ?? 0}`}>
@@ -289,6 +303,7 @@ export function PaginaIngresos({ perfil, onCambioCobros }: { perfil: Perfil; onC
                   })
                   setAvisos([]); setErrores([])
                 }} />
+                <BotonIcono icono="repetir" texto="Repetir cada mes, trimestre o año" onClick={() => { setRepitiendo(i); setEditando(null) }} />
                 {i.facturaId ? null : <BotonIcono icono="borrar" texto="Borrar" peligro onClick={() => borrar(i)} />}
               </td>
             </tr>
@@ -297,6 +312,8 @@ export function PaginaIngresos({ perfil, onCambioCobros }: { perfil: Perfil; onC
         </tbody>
         <tfoot><tr><td colSpan={5}>Total</td><td className="num">{euros(total('base'))}</td><td className="num">{euros(total('cuotaIva'))}</td><td className="num">{euros(total('cuotaRetencion'))}</td><td colSpan={2} /></tr></tfoot>
       </table>
+
+      <PanelRecurrentes tipo="ingreso" version={versionRec} onCambio={cargar} />
 
       {facturas.some((f) => f.estado === 'anulada') ? (
         <>

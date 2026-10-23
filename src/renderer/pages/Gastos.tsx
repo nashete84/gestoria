@@ -7,6 +7,7 @@ import {
   Adjuntos, AdjuntosPendientes, type ArchivoElegido, Campo, CampoEuros, CampoPct, Errores, euros, hoy, periodoActual, rango, SelectorPeriodo, type Periodo
 } from '../componentes'
 import { BotonIcono, Icono } from '../iconos'
+import { FormRecurrente, PanelRecurrentes, textoGenerados } from './Recurrentes'
 
 const OPERACIONES: Record<OperacionGasto, string> = {
   nacional: 'Proveedor español con IVA',
@@ -33,12 +34,19 @@ export function PaginaGastos({ perfil }: { perfil: Perfil }) {
   const [editando, setEditando] = useState<{ id: number | null; datos: GastoNuevo; copiaDe?: string; clave?: number } | null>(null)
   const [errores, setErrores] = useState<string[]>([])
   const [pendientes, setPendientes] = useState<ArchivoElegido[]>([])
+  const [repitiendo, setRepitiendo] = useState<Gasto | null>(null)
+  const [versionRec, setVersionRec] = useState(0)
+  const [hecho, setHecho] = useState<string | null>(null)
 
   const cargar = () => {
     const { desde, hasta } = rango(periodo)
     return llamar(api.listarGastos(desde, hasta)).then(setGastos).catch((e) => setErrores(mensajes(e)))
   }
   useEffect(() => { void cargar() }, [periodo])
+  // Si la app lleva abierta desde otro día, crea los recurrentes que hayan tocado.
+  useEffect(() => {
+    llamar(api.generarRecurrentes()).then((r) => { const t = textoGenerados(r); if (t) { setHecho(t); void cargar() } }).catch(() => {})
+  }, [])
 
   const d = editando?.datos
   const set = (cambios: Partial<GastoNuevo>) =>
@@ -87,6 +95,12 @@ export function PaginaGastos({ perfil }: { perfil: Perfil }) {
         <button onClick={() => { setEditando({ id: null, datos: deCategoria(perfil, 'otros') }); setPendientes([]); setErrores([]) }}><Icono nombre="mas" />Nuevo gasto</button>
       </div>
       <Errores errores={errores} />
+      {hecho ? <p className="ok">{hecho}</p> : null}
+      {repitiendo ? (
+        <FormRecurrente tipo="gasto" apunte={repitiendo} onCancelar={() => setRepitiendo(null)} onHecho={(r) => {
+          setRepitiendo(null); setHecho(textoGenerados(r) ?? 'Recurrente creado.'); setVersionRec(versionRec + 1); void cargar()
+        }} />
+      ) : null}
 
       {d ? (
         <div className="tarjeta" key={editando.id ?? `nuevo-${editando.clave ?? 0}`}>
@@ -174,6 +188,7 @@ export function PaginaGastos({ perfil }: { perfil: Perfil }) {
                   setEditando({ id: null, datos: { ...datos, fecha: hoy(), numeroFactura: '' }, copiaDe: g.concepto || g.proveedor || 'gasto', clave: Date.now() })
                   setPendientes([]); setErrores([])
                 }} />
+                <BotonIcono icono="repetir" texto="Repetir cada mes, trimestre o año" onClick={() => { setRepitiendo(g); setEditando(null) }} />
                 <BotonIcono icono="borrar" texto="Borrar" peligro onClick={() => borrar(g)} />
               </td>
             </tr>
@@ -182,6 +197,8 @@ export function PaginaGastos({ perfil }: { perfil: Perfil }) {
         </tbody>
         <tfoot><tr><td colSpan={4}>Total</td><td className="num">{euros(total('base'))}</td><td className="num">{euros(total('cuotaIva'))}</td><td /></tr></tfoot>
       </table>
+
+      <PanelRecurrentes tipo="gasto" version={versionRec} onCambio={cargar} />
     </section>
   )
 }

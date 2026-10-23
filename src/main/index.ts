@@ -9,6 +9,7 @@ import * as modelos from '../core/db/modelos'
 import * as renta from '../core/db/renta'
 import * as informes from '../core/db/informes'
 import * as importacion from '../core/db/importacion'
+import * as recurrentes from '../core/db/recurrentes'
 import { analizarDeclarando, type PlanImportacion } from '../core/importacion/declarando'
 import { guardarAdjuntoImportado, leerOrigenes, textoPdf } from './importar'
 import * as repos from '../core/db/repos'
@@ -79,6 +80,17 @@ function avisarImpuestos() {
   new Notification({ title: 'Impuestos pendientes', body: partes.join(' y ') + '.' }).show()
 }
 
+/** Al abrir la app, crea los ingresos y gastos recurrentes que tocan y lo avisa. */
+function aplicarRecurrentes() {
+  const r = recurrentes.generarRecurrentes(db, hoyLocal())
+  const partes = []
+  if (r.ingresos) partes.push(`${r.ingresos} ingreso(s)`)
+  if (r.gastos) partes.push(`${r.gastos} gasto(s)`)
+  if (!Notification.isSupported()) return
+  if (partes.length) new Notification({ title: 'Recurrentes', body: `Se han añadido ${partes.join(' y ')} recurrentes.` }).show()
+  if (r.errores.length) new Notification({ title: 'Recurrentes con problemas', body: r.errores.join(' ') }).show()
+}
+
 /** Al abrir la app, avisa de las facturas con el cobro vencido. */
 function avisarCobros() {
   if (!Notification.isSupported()) return
@@ -107,6 +119,15 @@ const handlers: Handlers = {
     return repos.actualizarCobro(db, id(i), { fechaVencimiento: fecha(c?.fechaVencimiento), fechaCobro: fecha(c?.fechaCobro) })
   },
   pendientesDeCobro: () => repos.ingresosPendientesDeCobro(db),
+
+  listarRecurrentes: () => recurrentes.listarRecurrentes(db),
+  crearRecurrente: (r) => {
+    recurrentes.crearRecurrente(db, r)
+    return recurrentes.generarRecurrentes(db, hoyLocal())
+  },
+  actualizarRecurrente: (i, c) => recurrentes.actualizarRecurrente(db, id(i), c, hoyLocal()),
+  borrarRecurrente: (i) => recurrentes.borrarRecurrente(db, id(i)),
+  generarRecurrentes: () => recurrentes.generarRecurrentes(db, hoyLocal()),
   borrarIngreso: async (i) => {
     const adj = repos.listarAdjuntos(db, 'ingreso', id(i))
     repos.borrarIngreso(db, id(i))
@@ -363,6 +384,7 @@ app.whenReady().then(() => {
   registrarIpc()
   crearVentana()
   try {
+    aplicarRecurrentes()
     avisarImpuestos()
     avisarCobros()
   } catch (err) {

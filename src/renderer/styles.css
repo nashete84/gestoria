@@ -173,3 +173,5 @@ table.desglose tr.info td { color: var(--suave); font-size: 12px; }
 .cobro.cobrado { color: var(--suave); }
 .cobro.pendiente { background: var(--aviso); color: #b07d00; }
 .cobro.vencido { background: var(--error); color: var(--peligro); font-weight: 600; }
+h2 .icono { vertical-align: -3px; margin-right: 6px; }
+.tarjeta > h2:first-child { margin-top: 0; }

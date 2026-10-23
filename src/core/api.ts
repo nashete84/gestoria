@@ -12,6 +12,8 @@ import type { InformeImpuestos, InformeIngresosGastos } from './informes'
 import type { Prevision } from './prevision'
 import type { ResultadoImportacion, VistaImportacion } from './db/importacion'
 import type { EntradaSimulador, ResultadoSimulador } from './simulador'
+import type { Recurrente, RecurrenteNuevo } from './recurrentes'
+import type { ResultadoRecurrentes } from './db/recurrentes'
 import type {
   Adjunto, Cliente, ClienteNuevo, Gasto, GastoNuevo, Ingreso, IngresoNuevo, Perfil
 } from './tipos'
@@ -40,6 +42,15 @@ export interface ApiGestoria {
   crearGasto(g: GastoNuevo): Promise<Resultado<Gasto>>
   actualizarGasto(id: number, g: GastoNuevo): Promise<Resultado<Gasto>>
   borrarGasto(id: number): Promise<Resultado<void>>
+
+  listarRecurrentes(): Promise<Resultado<Recurrente[]>>
+  /** Crea el recurrente y, a continuación, los apuntes que ya tocan hasta hoy. */
+  crearRecurrente(r: RecurrenteNuevo): Promise<Resultado<ResultadoRecurrentes>>
+  /** Al reanudar uno en pausa, se saltan las fechas que pasaron. */
+  actualizarRecurrente(id: number, c: Pick<Recurrente, 'frecuencia' | 'fin' | 'activa'>): Promise<Resultado<Recurrente>>
+  borrarRecurrente(id: number): Promise<Resultado<void>>
+  /** Crea los apuntes recurrentes que tocan hasta hoy. */
+  generarRecurrentes(): Promise<Resultado<ResultadoRecurrentes>>
 
   listarAdjuntos(entidad: Adjunto['entidad'], id: number): Promise<Resultado<Adjunto[]>>
   /** Abre el diálogo de archivos y copia los elegidos a la carpeta de la app. */
@@ -119,6 +130,7 @@ export const METODOS_API = [
   'listarClientes', 'crearCliente', 'actualizarCliente', 'borrarCliente',
   'listarIngresos', 'crearIngreso', 'actualizarIngreso', 'borrarIngreso', 'actualizarCobro', 'pendientesDeCobro',
   'listarGastos', 'crearGasto', 'actualizarGasto', 'borrarGasto',
+  'listarRecurrentes', 'crearRecurrente', 'actualizarRecurrente', 'borrarRecurrente', 'generarRecurrentes',
   'listarAdjuntos', 'adjuntar', 'elegirArchivos', 'adjuntarElegidos', 'abrirAdjunto', 'borrarAdjunto',
   'resumen', 'calendarioFiscal', 'registrarPresentacion', 'borrarPresentacion',
   'listarFacturas', 'vistaPreviaFactura', 'guardarPdfBorrador', 'emitirFactura', 'detalleFactura', 'guardarPdfFactura', 'xmlVerifactu', 'anularFactura', 'enviarVerifactu',

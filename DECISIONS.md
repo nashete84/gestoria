@@ -214,3 +214,12 @@ Cada ingreso tiene **vencimiento** y **fecha de cobro** (vacía = pendiente). Es
 - **Dónde se ve:** columna "Cobro" con botón de marcar cobrado hoy / volver a pendiente; filtro "Por cobrar (todos los años)"; insignia con los vencidos en el menú Ingresos; aviso y tarjeta "Pendiente de cobro" en Resumen; notificación del sistema al abrir la app si hay cobros vencidos.
 - Duplicar un ingreso deja la copia pendiente, con vencimiento a 30 días.
 - Descartados: cobros parciales (no hacen falta con un único pago por factura; se puede añadir si aparece el caso) y criterio de caja del IVA (Nacho no está en ese régimen; el IVA se devenga al facturar, cobre o no).
+
+## Ingresos y gastos recurrentes (2026-10-23, a petición de Nacho)
+
+Botón "Repetir" en cada ingreso o gasto: lo convierte en plantilla que se repite cada mes, trimestre o año desde su fecha, con fecha de fin opcional. Los apuntes se **crean solos** al abrir la app (con notificación) y al entrar en Ingresos o Gastos; si el apunte de origen es antiguo, al crear el recurrente se añaden los que faltan hasta hoy y el formulario dice cuántos y de qué fechas antes de confirmar.
+- **Día del mes:** siempre el de la fecha de origen; si el mes no lo tiene (31 en febrero), el último día. La serie se calcula desde el inicio, así que un 31 vuelve a ser 31 en marzo.
+- **Qué se copia:** todo menos la fecha; los gastos sin número de factura del proveedor (cada mes es otra factura) y los ingresos pendientes de cobro con vencimiento a 30 días y sin factura emitida (la factura se emite a mano: emitir crea un registro VERI*FACTU y eso no debe pasar sin que Nacho lo vea).
+- **Pausa:** al reanudar, las fechas que pasaron en pausa se saltan. **Borrar** el recurrente no borra lo que ya creó.
+- **Si una plantilla deja de ser válida** (por ejemplo, su actividad ya no está en el perfil), no se crea nada de ese recurrente, se avisa y se reintenta la próxima vez; los demás siguen.
+- Descartados: crear recurrentes desde cero con un formulario aparte (es más rápido partir de un apunte que ya está bien) y frecuencia semanal o "cada N meses" (no hay ningún caso en su histórico).

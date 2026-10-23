@@ -156,6 +156,19 @@ const MIGRACIONES: string[] = [
   ALTER TABLE ingresos ADD COLUMN fecha_vencimiento TEXT;
   ALTER TABLE ingresos ADD COLUMN fecha_cobro TEXT;
   UPDATE ingresos SET fecha_cobro = fecha;
+  `,
+  // Ingresos y gastos que se repiten: la plantilla es el apunte en JSON, sin fecha.
+  `
+  CREATE TABLE recurrentes (
+    id INTEGER PRIMARY KEY,
+    tipo TEXT NOT NULL CHECK (tipo IN ('ingreso', 'gasto')),
+    plantilla TEXT NOT NULL,
+    frecuencia TEXT NOT NULL CHECK (frecuencia IN ('mensual', 'trimestral', 'anual')),
+    inicio TEXT NOT NULL,
+    fin TEXT,
+    ultima TEXT,
+    activa INTEGER NOT NULL DEFAULT 1
+  );
   `
 ]
 
